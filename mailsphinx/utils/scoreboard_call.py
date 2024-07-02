@@ -1,3 +1,5 @@
+import datetime
+
 def scoreboard_call(model_list, input_time, scoreboard_type_toggle):
     """
     A function to write custom SB urls that will display the SB runs contained wthin
@@ -11,12 +13,6 @@ def scoreboard_call(model_list, input_time, scoreboard_type_toggle):
         object or a string (in YYYY-MM-DDTHH:MMZ format)
     scoreboard_type_toggle: a string containing either Probability or Intensity
     """
-    # not currently used but keeping it around in case something changes about the
-    # function call and we need to handle datetime objects 
-    from datetime import datetime
-    
-
-
     url = None
     date = input_time.rsplit(' ')[0]
     time = input_time.rsplit(' ')[1].rsplit('.')[0]
@@ -87,7 +83,6 @@ def scoreboard_call(model_list, input_time, scoreboard_type_toggle):
         for models in model_list:
             if 'SAWS-ASPECS' in models:
                 if model_string[-1] == '=':
-
                     model_string += 'aspforeconst+aspforevar+aspnowconst+aspnowvar'
                 else:
                     model_string += '+aspforeconst+aspforevar+aspnowconst+aspnowvar'
@@ -129,13 +124,28 @@ def scoreboard_call(model_list, input_time, scoreboard_type_toggle):
         if model_string == '&models=ace+goes':
             url = 'https://sep.ccmc.gsfc.nasa.gov/intensity/'
     # print(url)
-
-   
-
-
-
-
-
-
-
     return url
+
+def build_scoreboard_links_text(subscriber):
+    """
+    Builds scoreboard text/links for use in email body.
+
+    Parameters
+    ----------
+    subscriber : Subscriber() object
+
+    Returns
+    -------
+    text : string
+    """
+    time_of_generation = str(datetime.datetime.now())
+    gen_time_dmy = time_of_generation.rsplit(' ')[0]
+    gen_time_hms = time_of_generation.rsplit(' ')[1].rsplit('.')[0]
+    prob_sb_url = scoreboard_call(subscriber.models, time_of_generation, 'Probability')
+    int_sb_url = scoreboard_call(subscriber.models, time_of_generation, 'Intensity')
+    text = '\n\n\nReady-made links to the CCMC SEP Scoreboard over the reporting period:\n'
+    text += 'Probablility: ' + prob_sb_url
+    text += '\nIntensity: ' + int_sb_url
+    text += '\nThis report was generated at ' + time_of_generation
+    return text
+

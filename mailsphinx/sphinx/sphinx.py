@@ -1,8 +1,9 @@
 # Internal modules
 from ..utils import send_email
 from ..utils import subscription
+from ..utils import build_text
 from ..utils import config as cfg
-from ..utils import scoreboard_call
+
 
 # External modules (included with Python)
 import os
@@ -50,22 +51,8 @@ def main(report_path, do_send_email=False):
                 _, tail = os.path.split(report)
                 z.write(report, arcname=tail)
         print('Reports have been compressed into ', attachment)
-
-        text = "Take a look at this week's SPHINX report(s)! [test; do not reply]\n\n"
-        text += "Models you're subscribed to:\n"
-        for model in subscriber.models:
-            text += model + '\n'
         
-        time_of_generation = str(datetime.datetime.now())
-        gen_time_dmy = time_of_generation.rsplit(' ')[0]
-        gen_time_hms = time_of_generation.rsplit(' ')[1].rsplit('.')[0]
-        prob_sb_url = scoreboard_call.scoreboard_call(subscriber.models, time_of_generation, 'Probability')
-        int_sb_url = scoreboard_call.scoreboard_call(subscriber.models, time_of_generation, 'Intensity')
-
-        text += '\n\n\nReady-made links to the CCMC SEP Scoreboard over the reporting period\n'
-        text += 'Probablility: ' + prob_sb_url
-        text += '\nIntensity: ' + int_sb_url
-        text += '\nThis report was generated at ' + time_of_generation
+        text = build_text.build_text(subscriber)
         
         send_email.send_email('MailSPHINX: Weekly Report [test]', text, subscriber.email, attachment, send=do_send_email)
 
