@@ -11,3 +11,5 @@ This tool isn't really for public consumption. No need to belabor the documentat
 ## Run MailSPHINX
 The executable for mailsphinx is in the bin directory.
 
+## Subscribe to MailSPHINX
+[MailSPHINX Subscription Site](https://lukestegeman.github.io/mailsphinx/)
