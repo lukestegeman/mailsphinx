@@ -25,13 +25,12 @@ def main(report_path, test_email=False):
     # Collect the reports
     if report_path[-1] != os.sep:
         report_path += os.sep
-    print(os.sep)
     reports_ = os.listdir(report_path)
     reports = [report_path + file for file in reports_ if not file.endswith('.md')]
 
     # Read the recipient list and apply their appropriate subscription options
     # TODO: Add subscription options (specific models)
-    subscribers = subscription.load_subscribers(cfg.subscriber_data)
+    subscribers = subscription.load_subscribers()
     
     # Attach to email and send to recipient list
     for subscriber in subscribers:
