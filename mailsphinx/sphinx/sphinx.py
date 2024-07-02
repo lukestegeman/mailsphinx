@@ -2,11 +2,12 @@
 from ..utils import send_email
 from ..utils import subscription
 from ..utils import config as cfg
+from ..utils import scoreboard_call
 
 # External modules (included with Python)
 import os
 import zipfile
-
+import datetime
 
 
 def main(report_path, test_email=False):
@@ -24,6 +25,7 @@ def main(report_path, test_email=False):
     # Collect the reports
     if report_path[-1] != os.sep:
         report_path += os.sep
+    print(os.sep)
     reports_ = os.listdir(report_path)
     reports = [report_path + file for file in reports_ if not file.endswith('.md')]
 
@@ -55,6 +57,21 @@ def main(report_path, test_email=False):
         text += "Models you're subscribed to:\n"
         for model in subscriber.models:
             text += model + '\n'
+        
+        time_of_generation = str(datetime.datetime.now())
+        gen_time_dmy = time_of_generation.rsplit(' ')[0]
+        gen_time_hms = time_of_generation.rsplit(' ')[1].rsplit('.')[0]
+        prob_sb_url = scoreboard_call.scoreboard_call(subscriber.models, time_of_generation, 'Probability')
+        int_sb_url = scoreboard_call.scoreboard_call(subscriber.models, time_of_generation, 'Intensity')
+
+        text += 'Here is/are custom links to the SEP Scoreboard over the reporting period\n'
+        text += 'Probablility: ' + prob_sb_url
+        text += '\n Intenisty: ' + int_sb_url
+        text += '\nThis report was generated at ' + time_of_generation
+        
+
+
+
 
         if not test_email:
             send_email.send_email('MailSPHINX: Weekly Report [test]', text, subscriber.email, attachment, send=False)
