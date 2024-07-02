@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MailSPHINX: Subscribe</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="hero">
+        <h3>Prerelease</h3>
+        <h1><span>MailSPHINX Subscription Form</span><br>SEP Model Validation Alerts</h1>
+        <p>Fill out the information below to subscribe to weekly emails on SEP model validation reports:</p>
+        <form id="subscription-form" method="POST" action="https://script.google.com/macros/s/AKfycbzFdJk69Qa0U5S4m-jXYG3p-xwssVpF4Dgxsm6u11OATQMBlYB2MXd-z45vZ-EO-lDj/exec">
+            <input name="name" type="text" placeholder="Name" required>
+            <input name="email" type="email" placeholder="Email" required>
+
+            <div class="info-text">Select weekly SEP model reports:</div>
+
+            <button type="button" class="color-button" onclick="selectAllCheckboxes()">Select All Models</button>
+            <button type="button" class="color-button" onclick="clearAllCheckboxes()">Clear All</button>
+            <button type="submit" class="color-button">Confirm Selected Models & Subscribe</button><br><br>
+
+            ${checkboxes}$            
+
+        </form>
+        <span id="msg"></span>
+    </div>
+    <script src="./select-all-checkboxes.js"></script>
+    <script src="./clear-all-checkboxes.js"></script>
+    <script src="./subscribe-redirect.js"></script>
+</body>
+</html>
