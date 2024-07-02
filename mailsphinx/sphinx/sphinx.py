@@ -10,7 +10,7 @@ import zipfile
 import datetime
 
 
-def main(report_path, test_email=False):
+def main(report_path, do_send_email=False):
     """
     Main MailSPHINX function.
         Compiles HTML reports, 
@@ -29,7 +29,6 @@ def main(report_path, test_email=False):
     reports = [report_path + file for file in reports_ if not file.endswith('.md')]
 
     # Read the recipient list and apply their appropriate subscription options
-    # TODO: Add subscription options (specific models)
     subscribers = subscription.load_subscribers()
     
     # Attach to email and send to recipient list
@@ -63,17 +62,12 @@ def main(report_path, test_email=False):
         prob_sb_url = scoreboard_call.scoreboard_call(subscriber.models, time_of_generation, 'Probability')
         int_sb_url = scoreboard_call.scoreboard_call(subscriber.models, time_of_generation, 'Intensity')
 
-        text += 'Here is/are custom links to the SEP Scoreboard over the reporting period\n'
+        text += '\n\n\nReady-made links to the CCMC SEP Scoreboard over the reporting period\n'
         text += 'Probablility: ' + prob_sb_url
-        text += '\n Intenisty: ' + int_sb_url
+        text += '\nIntensity: ' + int_sb_url
         text += '\nThis report was generated at ' + time_of_generation
         
-
-
-
-
-        if not test_email:
-            send_email.send_email('MailSPHINX: Weekly Report [test]', text, subscriber.email, attachment, send=False)
+        send_email.send_email('MailSPHINX: Weekly Report [test]', text, subscriber.email, attachment, send=do_send_email)
 
     
 

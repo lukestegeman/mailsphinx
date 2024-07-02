@@ -25,7 +25,6 @@ def scoreboard_call(model_list, input_time, scoreboard_type_toggle):
         url_start = "https://sep.ccmc.gsfc.nasa.gov/probability/refresh=False"
         model_string = '&models='
         for models in model_list:
-            print(models, 'MagPy' in models)
             if 'MAG4' in models:
                 if model_string[-1] == '=':
 

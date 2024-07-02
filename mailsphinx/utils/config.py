@@ -13,9 +13,7 @@ email = Email()
 class Path:
     def __init__(self):
         self.report = './reports/'
-        self.data = './data/'
 path = Path()
 
-subscriber_data = path.data + 'test_subscriber_data.csv' # NEED TO STORE ACTUAL SUBSCRIBER DATA IN SECURE LOCATION
 
 
