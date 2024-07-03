@@ -9,14 +9,12 @@
 <body>
     <div class="hero">
         <h3>Prerelease</h3>
-        <h1><span>MailSPHINX Subscription Form</span><br>SEP Model Validation Alerts</h1>
-        <p>Fill out the information below to subscribe to weekly emails on SEP model validation reports:</p>
-        <form id="subscription-form" method="POST" action="https://script.google.com/macros/s/AKfycbzFdJk69Qa0U5S4m-jXYG3p-xwssVpF4Dgxsm6u11OATQMBlYB2MXd-z45vZ-EO-lDj/exec">
+        <h1><span>MailSPHINX Subscription Form</span><br>Solar Energetic Proton (SEP) Model Validation Reports</h1>
+        <h2><span>Fill out the information below to subscribe to weekly emails on SEP model validation reports:</span></h2><br>
+        <form id="subscription-form" method="POST" action="${googleScriptURL}$">
             <input name="name" type="text" placeholder="Name" required>
-            <input name="email" type="email" placeholder="Email" required>
-
-            <div class="info-text">Select weekly SEP model reports:</div>
-
+            <input name="email" type="email" placeholder="Email" required><br><br>
+            <h2><span>Select weekly SEP model reports:</span></h2><br>
             <button type="button" class="color-button" onclick="selectAllCheckboxes()">Select All Models</button>
             <button type="button" class="color-button" onclick="clearAllCheckboxes()">Clear All</button>
             <button type="submit" class="color-button">Confirm Selected Models & Subscribe</button><br><br>

@@ -1,13 +1,19 @@
 import openpyxl
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials as sac
+import re
+import os
+
+google_script_url = 'https://script.google.com/macros/s/AKfycbz7iD1-Nn1EnH_LvJYMg4sx0UApq4lX6nqje5xwxVINLeD2yQ9uXgQIh_iGeWbbuESZ/exec'
+json_keyfile = '../../security/mailsphinx-8010bb19634b.json'
+sheet_id = '1PJlkhI0aimpJH2o7KaN62-Lx0Hp_e-DQoPqi8KjiEC4' 
 
 def get_googlesheet_rows():
     """
     Extracts rows from Google Sheet that contains subscriber preferences.
     """
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = sac.from_json_keyfile_name('../security/mailsphinx-8010bb19634b.json', scope)
+    creds = sac.from_json_keyfile_name(json_keyfile, scope)
     client = gspread.authorize(creds)
     sheet = client.open('mailsphinx-subscriber-data').sheet1
     rows = sheet.get_all_values()
@@ -24,7 +30,7 @@ def update_googlesheet(data):
     """
 
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = sac.from_json_keyfile_name('../security/mailsphinx-8010bb19634b.json', scope)
+    creds = sac.from_json_keyfile_name(json_keyfile, scope)
     client = gspread.authorize(creds)
     sheet = client.open('mailsphinx-subscriber-data').sheet1
     sheet.clear()
@@ -67,9 +73,35 @@ if __name__ == '__main__':
     a = open('index_template.html', 'r')
     read = a.read()
     a.close()
-
     write_string = read.replace('${checkboxes}$', checkbox_string)
+    write_string = write_string.replace('${googleScriptURL}$', google_script_url)
     a = open('index.html', 'w')
+    a.write(write_string)
+    a.close()
+
+    # REPLACE ${googleScriptURL}$ in *.html
+    a = open('subscribed_template.html', 'r')
+    read = a.read()
+    a.close()
+    write_string = read.replace('${googleScriptURL}$', google_script_url)
+    write_string = write_string.replace('${sheetID}$', sheet_id)
+    a = open('subscribed.html', 'w')
+    a.write(write_string)
+    a.close()
+
+    a = open('unsubscribed_template.html', 'r')
+    read = a.read()
+    a.close()
+    write_string = read.replace('${googleScriptURL}$', google_script_url)
+    a = open('unsubscribed.html', 'w')
+    a.write(write_string)
+    a.close()
+
+    a = open('unsubscribe_template.js', 'r')
+    read = a.read()
+    a.close()
+    write_string = read.replace('${googleScriptURL}$', google_script_url)
+    a = open('unsubscribe.js', 'w')
     a.write(write_string)
     a.close()
 
@@ -101,5 +133,6 @@ if __name__ == '__main__':
             row.append(new_value)
         spreadsheet_data.append(row)
     update_googlesheet(spreadsheet_data)
-    print('mailsphinx-subscriber-data updated (https://docs.google.com/spreadsheets/d/1PJlkhI0aimpJH2o7KaN62-Lx0Hp_e-DQoPqi8KjiEC4/edit?gid=0#gid=0)')
 
+    print('mailsphinx-subscriber-data updated (https://docs.google.com/spreadsheets/d/' + sheet_id + '/edit?gid=0#gid=0)')
+    print('Current Google Script URL: ', google_script_url)
