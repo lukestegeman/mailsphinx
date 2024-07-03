@@ -4,7 +4,7 @@ from oauth2client.service_account import ServiceAccountCredentials as sac
 import re
 import os
 
-google_script_url = 'https://script.google.com/macros/s/AKfycbz7iD1-Nn1EnH_LvJYMg4sx0UApq4lX6nqje5xwxVINLeD2yQ9uXgQIh_iGeWbbuESZ/exec'
+google_script_url = 'https://script.google.com/macros/s/AKfycbyfWjUxba5iWALcwK086V0yD_a5NNqPnvpRDMftJdQBR0P1tYPrB9SQuMi-qMg60n4/exec'
 json_keyfile = '../../security/mailsphinx-8010bb19634b.json'
 sheet_id = '1PJlkhI0aimpJH2o7KaN62-Lx0Hp_e-DQoPqi8KjiEC4' 
 

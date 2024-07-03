@@ -6,9 +6,9 @@ function getQueryParameter(name) {
 function deleteRow() {
     const email = getQueryParameter('email');
     if (!email) {
-    document.getElementById('result').innerText = 'Email parameter missing';
-    return;
-}
+        document.getElementById('result').innerText = 'Email parameter missing';
+        return;
+    }
     const scriptURL = '${googleScriptURL}$?email=' + encodeURIComponent(email);
     
     fetch(scriptURL).then(response => response.text()).then(result => {
