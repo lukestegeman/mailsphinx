@@ -5,6 +5,7 @@ function getQueryParameter(name) {
 
 function deleteRow() {
     const email = getQueryParameter('email');
+    const baseSite = 'https://lukestegeman.github.io/mailsphinx/'
     if (!email) {
         document.getElementById('result').innerText = 'Email parameter missing';
         return;
@@ -14,7 +15,7 @@ function deleteRow() {
     fetch(scriptURL).then(response => response.text()).then(result => {
         document.getElementById('result').innerText = result;
         if (result === 'Row(s) deleted') {
-            window.location.href = 'unsubscribed.html';
+            window.location.href = baseSite.concat("unsubscribed.html");
         }
     }).catch(error => {
         console.error('Error:', error);
