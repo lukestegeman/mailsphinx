@@ -5,7 +5,10 @@ import re
 import os
 
 
-google_script_url = 'https://script.google.com/macros/s/AKfycbxXoJFI0toDbwhHgjtHevhWXWW_0QfZnxFIyd8D4h8wyU6IlMW_wh8rHxQ-2LdGGEOn/exec'
+google_script_url = 'https://script.google.com/macros/s/AKfycbwMmo6bxNodmL_A9smMaSsvOxhdGEsNerjFIQ7pmpmVQ2_2W_WPgLjBfyc7ZFeWI9qw/exec'
+
+#google_script_url = 'https://script.google.com/macros/s/AKfycbyqNBUU-bUmnj7f9_Wkh1zZ9p6CUb8RAFAsi-Il8WPwPmA6fDpAuzE7mZ3_wVB5OqGd/exec'
+#google_script_url = 'https://script.google.com/macros/s/AKfycbxdyha7_dpdJAYo71WBSYb9ML1kvJ1YP6a_f230msiT5Itnna4VdqrrOuaR6ThOd64c/exec'
 json_keyfile = '../../security/mailsphinx-8010bb19634b.json'
 sheet_id = '1PJlkhI0aimpJH2o7KaN62-Lx0Hp_e-DQoPqi8KjiEC4' 
 
@@ -106,6 +109,14 @@ if __name__ == '__main__':
     a.write(write_string)
     a.close()
 
+    a = open('subscribe-redirect_template.js', 'r')
+    read = a.read()
+    a.close()
+    write_string = read.replace('${googleScriptURL}$', google_script_url)
+    a = open('subscribe-redirect.js', 'w')
+    a.write(write_string)
+    a.close()
+
     # READ FROM GOOGLE SHEET
     rows = get_googlesheet_rows()    
     subscriber_preferences_old = {}
@@ -123,7 +134,7 @@ if __name__ == '__main__':
         counter += 1
 
     # WRITE TO GOOGLE SHEET
-    label_list = ['timestamp', 'email', 'name'] + model_list
+    label_list = ['timestamp', 'email', 'name', 'password'] + model_list
     spreadsheet_data = [label_list]
     for i in range(0, len(subscriber_preferences_old_list)):
         row = []
