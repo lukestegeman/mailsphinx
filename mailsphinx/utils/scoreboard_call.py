@@ -126,6 +126,10 @@ def scoreboard_call(model_list, input_time, scoreboard_type_toggle):
     # print(url)
     return url
 
+def build_html_shortlink(link, text):
+    text = '<a href="' + link + '">' + text + '</a>'
+    return text
+
 def build_scoreboard_links_text(subscriber):
     """
     Builds scoreboard text/links for use in email body.
@@ -143,9 +147,9 @@ def build_scoreboard_links_text(subscriber):
     gen_time_hms = time_of_generation.rsplit(' ')[1].rsplit('.')[0]
     prob_sb_url = scoreboard_call(subscriber.models, time_of_generation, 'Probability')
     int_sb_url = scoreboard_call(subscriber.models, time_of_generation, 'Intensity')
-    text = '\n\n\nReady-made links to the CCMC SEP Scoreboard over the reporting period:\n'
-    text += 'Probablility: ' + prob_sb_url
-    text += '\nIntensity: ' + int_sb_url
-    text += '\nThis report was generated at ' + time_of_generation
+    text = '<br><br><br>Ready-made links to the CCMC SEP Scoreboard over the reporting period:<br>'
+    text += build_html_shortlink(prob_sb_url, 'Probability Scoreboard') + '<br>'
+    text += build_html_shortlink(int_sb_url, 'Intensity Scoreboard') + '<br>'
+    text += 'This report was generated at ' + time_of_generation + '<br>'
     return text
 

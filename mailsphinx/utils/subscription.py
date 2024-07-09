@@ -36,7 +36,7 @@ def reformat_subscriber_df(df):
                             'name' : 'Name'})
     df = df.replace('', 0)
     df = df.replace('1', 1)
-    df_models = df.drop(columns=['Subscriber', 'Name', 'timestamp'])
+    df_models = df.drop(columns=['Subscriber', 'Name', 'timestamp', 'password'])
     model_list = []
     for i in range(0, len(df_models)):
         model_string = ''

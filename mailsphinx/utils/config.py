@@ -1,6 +1,5 @@
 # Configuration file
 
-
 # Email configuration
 class Email:
     def __init__(self):
@@ -9,11 +8,10 @@ class Email:
         self.server = 'ndc-relay.ndc.nasa.gov'
 email = Email()
 
-
 class Path:
     def __init__(self):
         self.report = './reports/'
 path = Path()
 
-
-
+# Website configuration
+google_script_url = 'https://script.google.com/macros/s/AKfycbw69r0XJSpISEFmE8X8Sb2_BKQIZOmBNaU8bzcAy0GwvNfvscFwmd0UH6AsxSVnxTg-/exec'

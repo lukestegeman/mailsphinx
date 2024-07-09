@@ -56,7 +56,7 @@ def send_email(subject, body, recipient, attachment=None, send=False):
     message['reply-to'] = cfg.email.reply_to
 
     # Attach text
-    message.attach(MIMEText(body))
+    message.attach(MIMEText(body, 'html'))
 
     # Set up email client
     smtp = smtplib.SMTP(cfg.email.server)
