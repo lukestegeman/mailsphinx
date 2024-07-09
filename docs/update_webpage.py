@@ -3,14 +3,11 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials as sac
 import re
 import os
+import config as cfg
 
-
-google_script_url = 'https://script.google.com/macros/s/AKfycbwMmo6bxNodmL_A9smMaSsvOxhdGEsNerjFIQ7pmpmVQ2_2W_WPgLjBfyc7ZFeWI9qw/exec'
-
-#google_script_url = 'https://script.google.com/macros/s/AKfycbyqNBUU-bUmnj7f9_Wkh1zZ9p6CUb8RAFAsi-Il8WPwPmA6fDpAuzE7mZ3_wVB5OqGd/exec'
-#google_script_url = 'https://script.google.com/macros/s/AKfycbxdyha7_dpdJAYo71WBSYb9ML1kvJ1YP6a_f230msiT5Itnna4VdqrrOuaR6ThOd64c/exec'
-json_keyfile = '../../security/mailsphinx-8010bb19634b.json'
-sheet_id = '1PJlkhI0aimpJH2o7KaN62-Lx0Hp_e-DQoPqi8KjiEC4' 
+google_script_url = cfg.google_script_url
+json_keyfile = cfg.json_keyfile
+sheet_id = cfg.sheet_id
 
 def get_googlesheet_rows():
     """
@@ -40,6 +37,16 @@ def update_googlesheet(data):
     sheet.clear()
     for row in data:
         sheet.append_row(row)
+
+def replace_lines_with_string(file_path, search, replacement):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+        write_string = ''
+        for line in lines:
+            if search in line:
+                line = replacement + ''
+            write_string += line
+    return write_string
 
 if __name__ == '__main__':
     
@@ -148,3 +155,11 @@ if __name__ == '__main__':
 
     print('mailsphinx-subscriber-data updated (https://docs.google.com/spreadsheets/d/' + sheet_id + '/edit?gid=0#gid=0)')
     print('Current Google Script URL: ', google_script_url)
+    
+    # UPDATE MAILSPHINX CONFIG
+    mailsphinx_config_filename = '../mailsphinx/utils/config.py'
+    mailsphinx_config_text = replace_lines_with_string(mailsphinx_config_filename, 'google_script_url', "google_script_url = '" + google_script_url + "'")
+    a = open(mailsphinx_config_filename, 'w')
+    a.write(mailsphinx_config_text)
+    a.close() 
+

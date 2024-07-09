@@ -9,7 +9,7 @@ function deleteRow() {
         document.getElementById('result').innerText = 'Email parameter missing';
         return;
     }
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwMmo6bxNodmL_A9smMaSsvOxhdGEsNerjFIQ7pmpmVQ2_2W_WPgLjBfyc7ZFeWI9qw/exec?email=' + encodeURIComponent(email);
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzAyYlvF-doksvmbllQUIOEhfBcY6KmZCbgHjSV8aDti30cfPjVjb3bLEoxHHY5eNKI/exec?email=' + encodeURIComponent(email);
     
     fetch(scriptURL).then(response => response.text()).then(result => {
         document.getElementById('result').innerText = result;
