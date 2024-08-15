@@ -1,4 +1,7 @@
 **/__pycache__/*
-reports/*
-zips/*
-
+dataframes/
+email_images/
+filesystem/
+**/reports/*
+**/zips/*
+*.html

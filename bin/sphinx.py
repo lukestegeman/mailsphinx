@@ -4,7 +4,7 @@ import argparse
 # Arguments for mailsphinx.py
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-rep', '--report-path', type=str, default='./reports/', help='Path, from top-level mailsphinx/ directory, to folder containing reports.')
+parser.add_argument('-rep', '--report-path', type=str, default='../sphinxval/reports/', help='Path, from top-level mailsphinx/ directory, to folder containing reports.')
 
 parser.add_argument('-sm', '--send-email', action='store_true', help='If active, attempts to send emails.')
 

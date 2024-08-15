@@ -44,14 +44,16 @@ def main(report_path, do_send_email=False):
                 reports_to_compress.append(model_filename)
 
         # Apply compression
-        attachment = 'zips/sphinx-weekly-reports.zip'
-        with zipfile.ZipFile(attachment, 'w') as z:
-            for report in reports_to_compress:
-                print(report)
-                _, tail = os.path.split(report)
-                z.write(report, arcname=tail)
-        print('Reports have been compressed into ', attachment)
-        
+        #attachment = 'zips/sphinx-weekly-reports.zip'
+        #with zipfile.ZipFile(attachment, 'w') as z:
+        #    for report in reports_to_compress:
+        #        print(report)
+        #        _, tail = os.path.split(report)
+        #        z.write(report, arcname=tail)
+        #print('Reports have been compressed into ', attachment)
+
+        attachment = None        
+
         text = build_text.build_text(subscriber)
         
         send_email.send_email('MailSPHINX: Weekly Report [test]', text, subscriber.email, attachment, send=do_send_email)

@@ -43,11 +43,11 @@ def send_email(subject, body, recipient, attachment=None, send=False):
     part = MIMEBase('application', 'octet-stream')
 
     # Attach files
-    if attachment is not None:
-        part.set_payload(open(attachment, 'rb').read())
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition', 'attachment; filename="' + os.path.basename(attachment) + '"')
-        message.attach(part)
+    #if attachment is not None:
+    #    part.set_payload(open(attachment, 'rb').read())
+    #    encoders.encode_base64(part)
+    #    part.add_header('Content-Disposition', 'attachment; filename="' + os.path.basename(attachment) + '"')
+    #    message.attach(part)
 
     # Configure email
     message['From'] = cfg.email.send_from
