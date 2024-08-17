@@ -1,6 +1,7 @@
-from ..utils import config
+from ..utils import manipulate_dates
 from ..utils import build_html
-
+#from ..utils import build_legend
+from ..utils import config
 
 import requests
 import pandas as pd
@@ -10,14 +11,19 @@ import matplotlib.pyplot as plt
 import os
 import matplotlib
 plt.rcParams['font.family'] = config.plot.font
-plt.rcParams['font.size'] = config.plot.fontsize
+plt.rcParams['font.size'] = config.plot.fontsize 
 
 def build_space_weather_summary(historical=False, start_datetime=None, end_datetime=None):
     goes_proton_df = download_goes_flux(flux_type='proton', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
     goes_xray_df = download_goes_flux(flux_type='xray', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
     plot_goes_flux(goes_xray_df, goes_proton_df, historical=historical)
     text = build_html.build_section_title('Space Weather Summary')
+    # MAKE LEGEND
+    #build_legend.build_legend()
+    #text += build_html.build_image(os.path.join(config.path.email_image, 'legend.jpg'))
+    text += build_html.build_image(os.path.join(config.path.static_image, 'legend.jpg'))
     text += build_html.build_image(os.path.join(config.path.email_image, 'goes-flux.jpg'))
+    text += build_html.build_divider()
     return text
 
 def rerequest(url, tries=0):
@@ -84,13 +90,13 @@ def download_goes_flux(flux_type, historical=False, start_datetime=None, end_dat
 
 def plot_goes_flux(df_xray, df_proton, historical=False): 
 
-    fig, (ax_xray, ax_proton) = plt.subplots(2, 1, sharex=True, figsize=(12, 14))
+    fig, (ax_xray, ax_proton) = plt.subplots(2, 1, sharex=True, figsize=(config.image.width, config.image.height * 2), gridspec_kw={'height_ratios' : [1, 1], 'hspace' : 0.1} )
     t_low_xray = np.min(df_xray['time_tag'])
     t_high_xray = np.max(df_xray['time_tag'])
     t_low_proton = np.min(df_proton['time_tag'])
     t_high_proton = np.max(df_proton['time_tag'])
-    t_low = min(t_low_xray, t_low_proton)
-    t_high = max(t_high_xray, t_high_proton)
+    t_low = manipulate_dates.round_to_nearest_day(min(t_low_xray, t_low_proton))
+    t_high = manipulate_dates.round_to_nearest_day(max(t_high_xray, t_high_proton))
 
     if historical:
         df_xray['time_tag_long'] = df_xray['time_tag_short'] = df_xray['time_tag']
@@ -129,7 +135,7 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
 
     ax_xray.plot(df_xray['time_tag_long'], df_xray['long'], label='Long', color=config.color.associations['Long X-Ray Flux'])
     ax_xray.plot(df_xray['time_tag_short'], df_xray['short'], label='Short', color=config.color.associations['Short X-Ray Flux'])
-    ax_xray.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0))
+    #ax_xray.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0))
     ax_xray.grid(axis='both')
     ax_xray.set_yscale('log')
     ax_xray.set_ylim([1e-9, max(1e-2, np.max(df_xray['long']))])
@@ -154,15 +160,16 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
     ax_proton.plot(df_proton['time_tag_500'], df_proton['>=500 MeV'], label='$\geq$ 500 MeV', color=config.color.associations['>=500 MeV Proton Flux'])
     ax_proton.plot([t_low, t_high], [10, 10], color=config.color.associations['>=10 MeV Proton Flux'], linestyle=':', linewidth=1)
     ax_proton.plot([t_low, t_high], [1, 1], color=config.color.associations['>=100 MeV Proton Flux'], linestyle=':', linewidth=1)
-    ax_proton.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0))
+    #ax_proton.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0))
     ax_proton.grid(axis='both')
     ax_proton.set_yscale('log')
-    ax_proton.set_ylim([10 ** -(1.5), max(1e+2, np.max(df_proton['>=1 MeV']))])
+    ax_proton.set_ylim([10 ** (-1), max(1e+2, np.max(df_proton['>=1 MeV']))])
     ax_proton.set_xlabel('UTC')
     ax_proton.set_xticklabels(ax_proton.get_xticklabels(), rotation=45)
     ax_proton.set_ylabel('GOES Integral Proton Flux [proton cm$^\mathregular{-2}$ sr$^\mathregular{-1}$ s$^\mathregular{-1}$]')
 
     plt.tight_layout()
-    plt.savefig(os.path.join(config.path.email_image, 'goes-flux.jpg'), dpi=config.image.dpi, bbox_inches=0) 
+    plt.subplots_adjust(left=config.html.left_padding_fraction) 
+    plt.savefig(os.path.join(config.path.email_image, 'goes-flux.jpg'), dpi=config.image.dpi // 2, bbox_inches=0) 
 
 

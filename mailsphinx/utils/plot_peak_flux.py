@@ -8,7 +8,7 @@ plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize
 
 def plot_predicted_peak_flux_vs_observed_peak_flux(df, save):
-    plt.figure(figsize=(10,6))
+    plt.figure(figsize=(config.image.width, config.image.height))
     for name, group in df.groupby('Model Category'):
         if not filter_objects.is_column_empty(group, 'Predicted SEP Peak Intensity (Onset Peak)'):
             plt.scatter(group['Observed SEP Peak Intensity (Onset Peak)'], group['Predicted SEP Peak Intensity (Onset Peak)'], label=name, s=20)
@@ -22,7 +22,6 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(df, save):
     plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
 
 def build_peak_flux_plot(df, savefile):
-    text = build_html.build_paragraph_title('Predicted Peak Flux vs. Observed Peak Flux')
     plot_predicted_peak_flux_vs_observed_peak_flux(df, savefile)
-    text += build_html.build_image(savefile)
+    text = build_html.build_image(savefile)
     return text

@@ -86,6 +86,16 @@ def build_event_section(event_forecasts, end_datetime):
     text += build_html.build_paragraph_title('Scoreboard Links')
     text += build_ccmc_scoreboard_links(event_forecasts, end_datetime)
     text += build_event_summary(event_forecasts)
-    text += build_model_event_forecasts(event_forecasts) 
+    #text += build_model_event_forecasts(event_forecasts) 
+    text += build_html.build_divider()
+    return text
+
+def build_event_section_new(event_forecasts, end_datetime):
+    text = ''
+    text += build_html.build_section_title('Events')
+    text += build_html.build_paragraph_title('Scoreboard Links')
+    text += build_ccmc_scoreboard_links(event_forecasts, end_datetime)
+    text += build_event_summary(event_forecasts)
+    #text += build_model_event_forecasts(event_forecasts) 
     text += build_html.build_divider()
     return text

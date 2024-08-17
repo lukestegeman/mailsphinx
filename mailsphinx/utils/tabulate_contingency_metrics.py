@@ -59,8 +59,6 @@ def compute_contingency_table_metrics(df, mode='all', additional_condition=True)
                         'Forecasts': forecasts}
     return contingency_data
 
-
-
 def build_contingency_table_data(df, header, mode='all', parenthesized_start_datetime=None, parenthesized_end_datetime=None):
     table_data = []
     for name, group in df.groupby('Model Category'):

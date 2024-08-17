@@ -59,6 +59,11 @@ def convert_energy_key_to_string(energy_key):
     energy_threshold_string = convert_energy_threshold_floats_to_string(energy_threshold_low, energy_threshold_high)
     return energy_threshold_string
 
+def convert_threshold_key_to_string(threshold_key):
+    threshold = convert_threshold_key_to_float(threshold_key)
+    threshold_string = convert_threshold_float_to_string(threshold)
+    return threshold_string
+
 def convert_threshold_float_to_string(threshold):
     """
     Converts the flux threshold to a string (e.g., > 10 pfu)

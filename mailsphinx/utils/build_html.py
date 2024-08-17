@@ -59,13 +59,13 @@ def build_table(headers, table_data, base_indent=0, header_color=config.color.as
     text += (base_indent + 0) * config.html.indent + '</table>\n'
     return text
 
-def build_image(image_filename, base_indent=0):
+def build_image(image_filename, base_indent=0, image_width_percentage=100):
     text = ''
     text += (base_indent + 0) * config.html.indent + '<table border="0" cellpadding="0" cellspacing="0" class="image_block" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;" width="100%">\n'
     text += (base_indent + 1) * config.html.indent + '<tr>\n'
     text += (base_indent + 2) * config.html.indent + '<td class="pad" style="width:100%;">\n'
     text += (base_indent + 3) * config.html.indent + '<div align="center" class="alignment" style="line-height:10px">\n'
-    text += (base_indent + 4) * config.html.indent + '<div style="max-width: 1000px;"><img height="auto" src="' + image_filename + '" style="display: block; height: auto; border: 0; width: 100%;" width="1000"/></div>\n'
+    text += (base_indent + 4) * config.html.indent + '<div style="max-width: ' + config.html.max_width + ';"><img height="auto" src="' + image_filename + '" style="display: block; height: auto; border: 0; width: ' + str(image_width_percentage) + '%;" width="' + config.html.max_width.rstrip('px') + '"/></div>\n'
     text += (base_indent + 3) * config.html.indent + '</div>\n'
     text += (base_indent + 2) * config.html.indent + '</td>\n'
     text += (base_indent + 1) * config.html.indent + '</tr>\n'
@@ -93,6 +93,8 @@ def build_head_section():
     a.close()
     gmt_datetime = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0).strftime('%Y-%m-%d %H:%M %Z')
     text = text.replace('${generation_time}$', 'Report Generation Time: ' + gmt_datetime)
+    for key, value in config.html.template_variables.items():
+        text = text.replace('${' + key + '}$', value) 
     return text
 
 def build_close_section():
