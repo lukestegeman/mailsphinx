@@ -171,5 +171,5 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
     plt.tight_layout()
     plt.subplots_adjust(left=config.html.left_padding_fraction) 
     plt.savefig(os.path.join(config.path.email_image, 'goes-flux.jpg'), dpi=config.image.dpi // 2, bbox_inches=0) 
-
+    plt.close()
 

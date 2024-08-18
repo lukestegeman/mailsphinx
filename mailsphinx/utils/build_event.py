@@ -3,6 +3,8 @@ from ..utils import scoreboard_call
 from ..utils import manipulate_keys
 from ..utils import format_objects
 from ..utils import tabulate_contingency_metrics
+from ..utils import build_color
+from ..utils import config
 
 import pandas as pd
 
@@ -24,8 +26,9 @@ def build_ccmc_scoreboard_links(event_forecasts, end_datetime):
     text += build_html.build_html_shortlink(url_intensity, 'CCMC SEP Intensity Scoreboard')
     return text
 
-def build_event_summary(event_forecasts, base_indent=0):
+def get_unique_events(event_forecasts): 
     unique_events = event_forecasts.drop_duplicates(subset=['Energy Channel Key', 'Threshold Key', 'Observed SEP Threshold Crossing Time'])
+    unique_events = unique_events[unique_events['Mismatch Allowed'] == False]
     observables = {'Energy': 'MeV',
                    'Flux Threshold': 'pfu',
                    'Observatory' : '', 
@@ -45,8 +48,12 @@ def build_event_summary(event_forecasts, base_indent=0):
     unique_events['Energy'] = unique_events['Energy Channel Key Surrogate'].apply(format_objects.format_energy_threshold)
     unique_events['Flux Threshold'] = unique_events['Threshold Key Surrogate'].apply(format_objects.format_flux_threshold)
     unique_events = unique_events.sort_values(by=['Observed SEP Threshold Crossing Time Surrogate', 'Energy Channel Key Surrogate', 'Threshold Key Surrogate'])
-    unique_events = unique_events.drop(columns=['Observed SEP Threshold Crossing Time Surrogate', 'Energy Channel Key Surrogate', 'Threshold Key Surrogate'])
-    unique_events = format_objects.format_df_datetime(unique_events) 
+    unique_events = unique_events.drop(columns=['Observed SEP Threshold Crossing Time Surrogate', 'Threshold Key Surrogate'])
+    unique_events = format_objects.format_df_datetime(unique_events)
+    return unique_events, observables
+    
+def build_event_summary(event_forecasts, base_indent=0):
+    unique_events, observables = get_unique_events(event_forecasts)
     text = ''
     text += build_html.build_paragraph_title('Event Summary', base_indent=base_indent)
     headers = list(observables.keys())
@@ -55,14 +62,19 @@ def build_event_summary(event_forecasts, base_indent=0):
         appendage = ''
         if value != '':
             appendage = ' [' + value + ']'
-        headers_with_units.append(key + appendage)
+        headers_with_units.append(config.relabel.event_summary[key] + appendage)
     table_data = []
+    table_data_color_dict = {}
+    row_counter = 0
     for index, row in unique_events.iterrows():
         row_data = []
         for header in headers:
             row_data.append(format_objects.format_data(row[header]))
         table_data.append(row_data)
-    text += build_html.build_table(headers_with_units, table_data)
+        for i in range(0, len(row_data)): 
+            table_data_color_dict[(row_counter, i)] = build_color.get_transparent_color(config.color.associations['>=' + str(int(row['Energy Channel Key Surrogate'])) + ' MeV Proton Flux'], config.plot.opacity)
+        row_counter += 1
+    text += build_html.build_table(headers_with_units, table_data, table_color_dict=table_data_color_dict)
     return text
     
 def build_model_event_forecasts(event_forecasts):

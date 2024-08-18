@@ -25,6 +25,9 @@ def format_df_datetime(value):
         if pd.isna(value):
             return value
         return value.strftime('%Y-%m-%d %H:%M')
+    if isinstance(value, str): # HACKY FIX
+        if ':00+00:00' in value:
+            return value.rstrip(':00+00:00')
     return value
 
 def to_snake_case(string):

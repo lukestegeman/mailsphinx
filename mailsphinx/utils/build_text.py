@@ -89,8 +89,8 @@ def build_text_new(is_historical=False):
         os.mkdir(config.path.email_image)
   
 
-    sphinx_df = pd.read_csv(os.path.join(config.path.dataframe, 'test-small.csv'))
-    print('WARNING: dataframe is ' + config.path.dataframe + os.sep + 'test-small.csv')
+    sphinx_df = pd.read_csv(os.path.join(config.path.dataframe, 'test.csv'))
+    print('WARNING: dataframe is ' + config.path.dataframe + os.sep + 'test.csv')
 
     # CONVERT ALL DATAFRAME DATETIMES-LIKE STRINGS TO DATETIMES
     datetime_columns = manipulate_dates.identify_datetime_columns(sphinx_df)
@@ -113,12 +113,13 @@ def build_text_new(is_historical=False):
     html += build_space_weather_summary.build_space_weather_summary(is_historical, start_datetime=week_start, end_datetime=week_end)
 
     event_forecasts, event = build_event.check_for_event(sphinx_df, week_start, week_end)
+    events, _ = build_event.get_unique_events(event_forecasts)
 
-    html += build_model.build_model_section_new(sphinx_df, weekly_forecasts, week_start, week_end) 
+    html += build_model.build_model_section_new(sphinx_df, weekly_forecasts, week_start, week_end, events) 
     #html += build_model.build_model_section(sphinx_df, weekly_forecasts, week_start, week_end)
 
     if event:
-        html += build_event.build_event_section_new(event_forecasts, week_end)    
+        html += build_event.build_event_section_new(event_forecasts, week_end) 
         #html += build_event.build_event_section(event_forecasts, week_end)
     
     return html

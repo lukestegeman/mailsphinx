@@ -49,28 +49,33 @@ def plot_probability_histogram(df, save, main_model=''):
     plt.tight_layout()
     plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
     
-def build_probability_plot(model, df, savefile, week_start, week_end):
+def build_probability_plot(model, df, savefile, week_start, week_end, events, need_legend=False):
     #plot_probability_histogram(df, savefile)
-    plot_probability_time_series_group(model, df, savefile, week_start, week_end)
+    plot_probability_time_series_group(model, df, savefile, week_start, week_end, events, need_legend=need_legend)
     text = build_html.build_image(savefile, image_width_percentage=config.html.probability_width_percentage)
     return text
 
-def plot_probability_time_series_group(name, group, save, week_start, week_end, colors=config.color.color_cycle, bins=20):
+def plot_probability_time_series_group(name, group, save, week_start, week_end, events, colors=config.color.color_cycle, bins=20, need_legend=False):
 
     fig, ax = plt.subplots(1, 2, figsize=(config.image.width, config.image.height), gridspec_kw={'width_ratios' : [3, 1], 'wspace' : 0}, sharey=True)
     color_counter = 0
     for subname, subgroup in group.groupby('Model Flavor'):
         if not filter_objects.is_column_empty(subgroup, 'Predicted SEP Probability'):
             plot_probability_time_series_subgroup(ax, subname, subgroup, colors[color_counter], bins)
+            color_counter += 1
 
     ax[0].set_title(name + ' SEP Probability')
     ax[0].set_xlabel('UTC')
     ax[0].set_xlim([week_start, week_end])
     ax[0].set_xticklabels(ax[0].get_xticks(), rotation=45)
+    ax[0].set_ylim([0.0, 1.0])
     ax[0].set_ylabel('Predicted SEP Probability')
     ax[0].grid(True)
     ax[0].set_aspect(aspect='auto')
-    ax[0].xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d'))
+    ax[0].xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d')) 
+    for index, event in events.iterrows():
+        ax[0].axvspan(event['Observed SEP Threshold Crossing Time'], event['Observed SEP End Time'], color=config.color.associations[event['Energy']], alpha=config.plot.opacity)
+
 
     ax[1].set_xlabel('Forecasts')
     ax[1].grid(True)
@@ -82,14 +87,16 @@ def plot_probability_time_series_group(name, group, save, week_start, week_end, 
         for spine in ax[i].spines.values():
             spine.set_linewidth(4)
     
-    plt.legend(loc='upper right')
+    if need_legend:
+        ax[1].legend(loc='upper right')
     plt.tight_layout(pad=0.5)
     plt.subplots_adjust(left=config.html.left_padding_fraction / config.html.probability_width_percentage * 100)
     plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
+    plt.close()
     
 def plot_probability_time_series_subgroup(ax, subname, subgroup, color, bins):
     ax[0].scatter(subgroup['Prediction Window Start'], subgroup['Predicted SEP Probability'], color=color, label=subname, facecolor='none', s=config.plot.marker_size)  
-    ax[1].hist(subgroup['Predicted SEP Probability'], bins=bins, orientation='horizontal', color=color, alpha=0.25)
+    ax[1].hist(subgroup['Predicted SEP Probability'], bins=bins, orientation='horizontal', color=color, alpha=0.25, label=subname)
 
 
 

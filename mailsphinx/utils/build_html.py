@@ -22,7 +22,7 @@ def build_regular_text(regular_text, base_indent=0):
     text += (base_indent + 0) * config.html.indent + '</div>\n'
     return text
 
-def build_table(headers, table_data, base_indent=0, header_color=config.color.associations['Neutral'], header_color_dict=None):
+def build_table(headers, table_data, base_indent=0, header_color=config.color.associations['Neutral'], header_color_dict=None, table_color_dict=None, table_text_color_dict=None):
     """
     Writes the html that displays a table.
     
@@ -48,11 +48,27 @@ def build_table(headers, table_data, base_indent=0, header_color=config.color.as
         text += (base_indent + 3) * config.html.indent + '<th' + style_string + '>' + headers[i] + '</th>\n'
     text += (base_indent + 2) * config.html.indent + '</tr>\n'
     text += (base_indent + 1) * config.html.indent + '</thead>\n'
+    style_string_starter = ''
+    if table_color_dict is not None:
+        style_string_starter = ' style="'
+        table_color_dict_keys = list(table_color_dict.keys())
+    if table_text_color_dict is not None: 
+        style_string_starter = ' style="'
+        table_text_color_dict_keys = list(table_text_color_dict.keys())
     for i in range(0, len(table_data)):
         text += (base_indent + 1) * config.html.indent + '<tbody>\n'
         text += (base_indent + 2) * config.html.indent + '<tr>\n'
         for j in range(0, len(table_data[i])):
-            style_string = ''
+            style_string = style_string_starter + ''
+            if table_color_dict is not None:
+                if (i, j) in table_color_dict_keys: 
+                    style_string += 'background-color: ' + table_color_dict[(i, j)] + ';'
+            if table_text_color_dict is not None:
+                if (i, j) in table_text_color_dict_keys: 
+                    style_string += 'color: ' + table_text_color_dict[(i, j)] + ';'
+            if style_string != '':
+                style_string += '"'
+
             text += (base_indent + 3) * config.html.indent + '<td' + style_string + '>' + format_objects.format_df_datetime(table_data[i][j]) + '</td>\n' 
         text += (base_indent + 2) * config.html.indent + '</tr>\n'
         text += (base_indent + 1) * config.html.indent + '</tbody>\n'

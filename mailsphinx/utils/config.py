@@ -38,6 +38,23 @@ class Time:
         self.hours_per_week = 168.0
 time = Time()
 
+class Relabel:
+    def __init__(self):
+        self.event_summary = {'Energy': 'Energy',
+                              'Flux Threshold': 'Flux Threshold',
+                              'Observatory' : 'Observatory', 
+                              'Observed SEP Threshold Crossing Time' : 'Threshold Crossing Time',
+                              'Observed SEP End Time' : 'End Time',
+                              'Observed SEP Duration' : 'Duration',
+                              'Observed SEP Fluence' : 'Fluence',
+                              'Observed SEP Peak Intensity (Onset Peak)' : 'Onset Peak Flux',
+                              'Observed SEP Peak Intensity (Onset Peak) Time' : 'Onset Peak Time',
+                              'Observed SEP Peak Intensity Max (Max Flux)' : 'Max Flux',
+                              'Observed SEP Peak Intensity Max (Max Flux) Time' : 'Max Flux Time'
+                             }
+relabel = Relabel()
+
+
 class Color:
     def __init__(self):
         self.associations = {'Hits'                  : '#2e7d32',
@@ -64,6 +81,14 @@ class Color:
                              'No Matching Threshold' : '#000000',
                              'Ongoing SEP Event' : '#000000',
                              }
+        self.associations['&ge; 1'] = self.associations['>=1 MeV Proton Flux']
+        self.associations['&ge; 5'] = self.associations['>=5 MeV Proton Flux']
+        self.associations['&ge; 10'] = self.associations['>=10 MeV Proton Flux']
+        self.associations['&ge; 30'] = self.associations['>=30 MeV Proton Flux']
+        self.associations['&ge; 50'] = self.associations['>=50 MeV Proton Flux']
+        self.associations['&ge; 60'] = self.associations['>=60 MeV Proton Flux']
+        self.associations['&ge; 100'] = self.associations['>=100 MeV Proton Flux']
+        self.associations['&ge; 500'] = self.associations['>=500 MeV Proton Flux']
 
 
 
@@ -113,6 +138,8 @@ class Image:
         self.dpi = 600
         self.width = 12
         self.height = 6
+        self.peak_flux_width = 8 
+        self.peak_flux_height = 6
 image = Image()
 
 class Plot:
@@ -120,6 +147,7 @@ class Plot:
         self.font = 'Arial'
         self.fontsize = 16
         self.marker_size = 100
+        self.opacity = 0.3
 plot = Plot()
 
 class Index:
