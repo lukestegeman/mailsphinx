@@ -4,7 +4,16 @@ import datetime
 import pytz
 import pandas as pd
 
-
+def round_to_nearest_day(dt):
+    half_day = datetime.timedelta(days=0.5)
+    start_of_day = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    delta = dt - start_of_day
+    if delta >= half_day:
+        add = datetime.timedelta(days=1)
+    else:
+        add = datetime.timedelta(days=0)
+    rounded_datetime = start_of_day + add
+    return rounded_datetime
 
 # MAILSPHINX DATE BOUNDARIES
 def get_most_recent_weekday(right_now, weekday):

@@ -59,10 +59,11 @@ def compute_contingency_table_metrics(df, mode='all', additional_condition=True)
                         'Forecasts': forecasts}
     return contingency_data
 
-
-
 def build_contingency_table_data(df, header, mode='all', parenthesized_start_datetime=None, parenthesized_end_datetime=None):
     table_data = []
+    table_color_dict = {}
+    table_text_color_dict = {}
+    row_counter = 0
     for name, group in df.groupby('Model Category'):
         for subname, subgroup in group.groupby('Model Flavor'):
             table_line_dict = dict(zip(header, [''] * len(header)))
@@ -80,18 +81,32 @@ def build_contingency_table_data(df, header, mode='all', parenthesized_start_dat
                     if contingency_data[item] is not None:
                         if (contingency_data_parenthesized is not None):
                             table_line_dict[item] = format_objects.format_parenthesized_entry(contingency_data[item], contingency_data_parenthesized[item])
+                            
                         else:
                             table_line_dict[item] = str(contingency_data[item])
             table_data.append(list(table_line_dict.values()))
-    return table_data
+            for key, value in contingency_data.items():
+                if key != 'Forecasts':
+                    if key == 'Hits':
+                        column_counter = 2
+                    elif key == 'Misses':
+                        column_counter = 3
+                    elif key == 'False Alarms':
+                        column_counter = 4
+                    elif key == 'Correct Negatives':
+                        column_counter = 5
+                    table_color_dict[(row_counter, column_counter)] = config.color.associations[key]
+                    table_text_color_dict[(row_counter, column_counter)] = '#ffffff'
+            row_counter += 1
+    return table_data, table_color_dict, table_text_color_dict
 
 
 def build_all_clear_contingency_table(df, week_start, week_end):
     text = build_html.build_paragraph_title('All Clear Contingency Table')
     headers = ['Model Category', 'Model Flavor', 'Hits', 'Misses', 'False Alarms', 'Correct Negatives', 'Forecasts', 'All-Time Report Link']
     header_color_dict = dict(zip(headers, [None, None, config.color.associations['Hits'], config.color.associations['Misses'], config.color.associations['False Alarms'], config.color.associations['Correct Negatives'], None, None]))
-    table_data = build_contingency_table_data(df, headers, 'all', week_start, week_end)
-    text += build_html.build_table(headers, table_data, header_color_dict=header_color_dict)
+    table_data, table_color_dict, table_text_color_dict = build_contingency_table_data(df, headers, 'all', week_start, week_end)
+    text += build_html.build_table(headers, table_data, header_color_dict=header_color_dict, table_color_dict=table_color_dict, table_text_color_dict=table_text_color_dict)
     return text
 
 def build_false_alarm_table(df):

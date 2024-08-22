@@ -18,8 +18,7 @@ import datetime
 import os
 import shutil
 
-
-def build_text(is_historical=False):
+def build_text(is_historical=False, convert_images_to_base64=False):
     """
     Writes the text that makes up the email body.
 
@@ -32,15 +31,15 @@ def build_text(is_historical=False):
     """
     
     # RESET IMAGES
-    print(config.path.email_image)
     if os.path.exists(config.path.email_image):
         print('deleting...')
         shutil.rmtree(config.path.email_image)
     if not os.path.exists(config.path.email_image):
         os.mkdir(config.path.email_image)
-   
-    sphinx_df = pd.read_csv(os.path.join(config.path.dataframe, 'test-small.csv'))
-    print('WARNING: dataframe is ' + config.path.dataframe + os.sep + 'test-small.csv')
+  
+
+    sphinx_df = pd.read_csv(os.path.join(config.path.dataframe, 'SPHINX_dataframe.csv'))
+    print('WARNING: dataframe is ' + config.path.dataframe + os.sep + 'SPHINX_dataframe.csv')
 
     # CONVERT ALL DATAFRAME DATETIMES-LIKE STRINGS TO DATETIMES
     datetime_columns = manipulate_dates.identify_datetime_columns(sphinx_df)
@@ -60,17 +59,15 @@ def build_text(is_historical=False):
     html = ''
     html += build_html.build_head_section()
     html += build_overview.build_overview_section(sphinx_df, week_start, week_end, year_start, first_forecast_datetime, weekly_forecasts, yearly_forecasts)
-    html += build_space_weather_summary.build_space_weather_summary(is_historical, start_datetime=week_start, end_datetime=week_end)
     event_forecasts, event = build_event.check_for_event(sphinx_df, week_start, week_end)
+    events, _ = build_event.get_unique_events(event_forecasts)
     if event:
-        html += build_event.build_event_section(event_forecasts, week_end)
-    html += build_model.build_model_section(sphinx_df, weekly_forecasts, week_start, week_end)
+        html += build_event.build_event_section_new(event_forecasts, week_end) 
+        #html += build_event.build_event_section(event_forecasts, week_end)
+    html += build_space_weather_summary.build_space_weather_summary(is_historical, start_datetime=week_start, end_datetime=week_end, convert_image_to_base64=convert_images_to_base64)
+
+    html += build_model.build_model_section_new(sphinx_df, weekly_forecasts, week_start, week_end, events, convert_images_to_base64) 
+    #html += build_model.build_model_section(sphinx_df, weekly_forecasts, week_start, week_end)
 
     return html
-
-
-
-
-
-
 
