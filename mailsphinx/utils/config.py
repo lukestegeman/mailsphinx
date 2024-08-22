@@ -19,6 +19,7 @@ class Path:
         self.email_header_template = os.path.abspath('./template/email_header.html')
         self.email_image = os.path.abspath('./email_images/')
         self.static_image = os.path.abspath('./static_images/')
+        self.all_time_statistics_overview = os.path.abspath(os.path.join(self.report, 'all_time_statistics_overview.feather'))
 path = Path()
 
 class Time:
@@ -36,6 +37,7 @@ class Time:
         self.iswa_format_swap = datetime.datetime(year=2023, month=5, day=23)
         self.iswa_minimum_time = datetime.datetime(year=2010, month=4, day=14, hour=0, minute=0, second=0, tzinfo=pytz.UTC)
         self.hours_per_week = 168.0
+        self.generation_time = None
 time = Time()
 
 class Relabel:
@@ -62,7 +64,7 @@ class Color:
                              'Misses'                : '#c62828',
                              'False Alarms'          : '#f57f17',
                              'Neutral'               : '#0e1111',
-                             'Invalid'               : '#000000',
+                             'Not Evaluated'         : '#000000',
                              'Long X-Ray Flux'       : '#ffa500',
                              'Short X-Ray Flux'      : '#5400a8',
                              '>=1 MeV Proton Flux'   : '#b3b3b3',
@@ -80,6 +82,8 @@ class Color:
                              'Trigger/Input after Observed Phenomenon' : '#000000',
                              'No Matching Threshold' : '#000000',
                              'Ongoing SEP Event' : '#000000',
+                             'Unmatched' : '#000000',
+                             None: 'none'
                              }
         self.associations['&ge; 1'] = self.associations['>=1 MeV Proton Flux']
         self.associations['&ge; 5'] = self.associations['>=5 MeV Proton Flux']
@@ -129,7 +133,9 @@ class Shape:
                              'Eruption Out of Range' : 'X',
                              'Trigger/Input after Observed Phenomenon': 'd',
                              'No Matching Threshold' : '*', 
-                             'Ongoing SEP Event' : '>'}
+                             'Ongoing SEP Event' : '>',
+                             'Unmatched' : '2',
+                             None : 'None'}
         self.contingency = 'o'
 shape = Shape()
 
@@ -138,6 +144,7 @@ class Image:
         self.dpi = 600
         self.width = 12
         self.height = 6
+        self.height_contingency = 3
         self.peak_flux_width = 8 
         self.peak_flux_height = 6
 image = Image()
@@ -156,7 +163,7 @@ class Index:
                             'Misses' : 3,
                             'False Alarms' : 2,
                             'Correct Negatives' : 1,
-                            'Invalid' : 0
+                            'Not Evaluated' : 0
                            }
 index = Index()
 
@@ -263,6 +270,8 @@ class Type:
                           'Last Data Time to Issue Time' : float  
                           }
 type = Type()
+
+reset_all_time_df = False
 
 # Website configuration
 google_script_url = 'https://script.google.com/macros/s/AKfycbw69r0XJSpISEFmE8X8Sb2_BKQIZOmBNaU8bzcAy0GwvNfvscFwmd0UH6AsxSVnxTg-/exec'

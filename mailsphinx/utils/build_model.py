@@ -25,7 +25,7 @@ def build_model_section(df, weekly_df, week_start, week_end):
             text += plot_probability.build_probability_plot(group, os.path.join(config.path.email_image, 'probability-histogram-' + str(counter) + '.jpg'))
     return text
 
-def build_model_section_new(df, weekly_df, week_start, week_end, events):
+def build_model_section_new(df, weekly_df, week_start, week_end, events, convert_images_to_base64=False):
     text = build_html.build_section_title('Model Performance')
 
     # MAKE CONTINGENCY TIMELINES
@@ -43,7 +43,7 @@ def build_model_section_new(df, weekly_df, week_start, week_end, events):
                     else:
                         space = ' '
                     title = model_category + space + model_flavor.replace('_', ' ') + ', ' + energy_channel_string + ', ' + threshold_string
-                    text += plot_contingency.build_contingency_plot(title, subsubsubgroup, os.path.join(config.path.email_image, 'contingency-' + str(counter) + '.jpg'), week_start, week_end, filtered_events)
+                    text += plot_contingency.build_contingency_plot(title, subsubsubgroup, os.path.join(config.path.email_image, 'contingency-' + str(counter) + '.jpg'), week_start, week_end, filtered_events, convert_image_to_base64=convert_images_to_base64)
                     counter += 1
 
     # MAKE PROBABILITY TIMELINES WITH VERTICAL HISTOGRAMS
@@ -60,7 +60,7 @@ def build_model_section_new(df, weekly_df, week_start, week_end, events):
                     subname = ' ' + unique_model_flavors[0]
                 else:
                     subname = ''
-                text += plot_probability.build_probability_plot(name + subname + ', ' + energy_channel_string, subgroup, os.path.join(config.path.email_image, 'probability-histogram-' + str(counter) + '.jpg'), week_start, week_end, filtered_events, need_legend=need_legend)
+                text += plot_probability.build_probability_plot(name + subname + ', ' + energy_channel_string, subgroup, os.path.join(config.path.email_image, 'probability-histogram-' + str(counter) + '.jpg'), week_start, week_end, filtered_events, need_legend=need_legend, convert_image_to_base64=convert_images_to_base64)
                 counter += 1
 
     # MAKE PREDICTED PEAK FLUX VS. OBSERVED PEAK FLUX
@@ -81,7 +81,7 @@ def build_model_section_new(df, weekly_df, week_start, week_end, events):
     for name, group in weekly_df.groupby('Energy Channel Key'):
         if not filter_objects.is_column_empty(group, 'Predicted SEP Peak Intensity (Onset Peak)'):
             energy_channel_string = manipulate_keys.convert_energy_key_to_string(name)
-            text += plot_peak_flux.build_peak_flux_plot(energy_channel_string, group, os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg'), min_peak, max_peak)
+            text += plot_peak_flux.build_peak_flux_plot(energy_channel_string, group, os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg'), min_peak, max_peak, convert_image_to_base64=convert_images_to_base64)
             counter += 1
 
     # MAKE CONTINGENCY TABLE

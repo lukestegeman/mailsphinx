@@ -1,6 +1,6 @@
 from ..utils import manipulate_dates
 from ..utils import build_html
-#from ..utils import build_legend
+from ..utils import build_legend
 from ..utils import config
 
 import requests
@@ -13,16 +13,16 @@ import matplotlib
 plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize 
 
-def build_space_weather_summary(historical=False, start_datetime=None, end_datetime=None):
+def build_space_weather_summary(historical=False, start_datetime=None, end_datetime=None, convert_image_to_base64=False):
     goes_proton_df = download_goes_flux(flux_type='proton', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
     goes_xray_df = download_goes_flux(flux_type='xray', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
     plot_goes_flux(goes_xray_df, goes_proton_df, historical=historical)
     text = build_html.build_section_title('Space Weather Summary')
     # MAKE LEGEND
-    #build_legend.build_legend()
-    #text += build_html.build_image(os.path.join(config.path.email_image, 'legend.jpg'))
-    text += build_html.build_image(os.path.join(config.path.static_image, 'legend.jpg'))
-    text += build_html.build_image(os.path.join(config.path.email_image, 'goes-flux.jpg'))
+    build_legend.build_legend()
+    text += build_html.build_image(os.path.join(config.path.email_image, 'legend.jpg'), write_as_base64=convert_image_to_base64)
+    #text += build_html.build_image(os.path.join(config.path.static_image, 'legend.jpg'), write_as_base64=convert_image_to_base64)
+    text += build_html.build_image(os.path.join(config.path.email_image, 'goes-flux.jpg'), write_as_base64=convert_image_to_base64)
     text += build_html.build_divider()
     return text
 
@@ -150,7 +150,7 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
     ax_xray_class.set_yticks(positions)
     ax_xray_class.set_yticklabels(labels)
     ax_xray_class.yaxis.set_label_position('right')
-    ax_proton.plot(df_proton['time_tag_1'], df_proton['>=1 MeV'], label='$\geq$ 1 MeV', color=config.color.associations['>=1 MeV Proton Flux'])
+    #ax_proton.plot(df_proton['time_tag_1'], df_proton['>=1 MeV'], label='$\geq$ 1 MeV', color=config.color.associations['>=1 MeV Proton Flux'])
     ax_proton.plot(df_proton['time_tag_5'], df_proton['>=5 MeV'], label='$\geq$ 5 MeV', color=config.color.associations['>=5 MeV Proton Flux'])
     ax_proton.plot(df_proton['time_tag_10'], df_proton['>=10 MeV'], label='$\geq$ 10 MeV', color=config.color.associations['>=10 MeV Proton Flux'])
     ax_proton.plot(df_proton['time_tag_30'], df_proton['>=30 MeV'], label='$\geq$ 30 MeV', color=config.color.associations['>=30 MeV Proton Flux'])
@@ -163,7 +163,7 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
     #ax_proton.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0))
     ax_proton.grid(axis='both')
     ax_proton.set_yscale('log')
-    ax_proton.set_ylim([10 ** (-1), max(1e+2, np.max(df_proton['>=1 MeV']))])
+    ax_proton.set_ylim([10 ** (-1), max(1e+2, np.max(df_proton['>=5 MeV']))])
     ax_proton.set_xlabel('UTC')
     ax_proton.set_xticklabels(ax_proton.get_xticklabels(), rotation=45)
     ax_proton.set_ylabel('GOES Integral Proton Flux [proton cm$^\mathregular{-2}$ sr$^\mathregular{-1}$ s$^\mathregular{-1}$]')

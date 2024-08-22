@@ -13,7 +13,7 @@ import datetime
 if __name__ == '__main__':
 
     actual_now = datetime.datetime.now()
-    with freezegun.freeze_time('2022-04-04'):
+    with freezegun.freeze_time('2024-01-08'):
 
         # FOR TESTING -- SAVES THE HTML FILE FOR CHECKING
         frozen_now = datetime.datetime.now()
@@ -23,7 +23,7 @@ if __name__ == '__main__':
         else:
             historical = False
 
-        html = bt.build_text_new(historical)
+        html = bt.build_text(historical, convert_images_to_base64=True)
 
 
         a = open('test.html', 'w')

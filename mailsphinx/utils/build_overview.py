@@ -1,6 +1,9 @@
 from ..utils import manipulate_keys
 from ..utils import build_html
+from ..utils import config
 
+import os
+import pandas as pd
 # BUILD OVERVIEW SECTION
 def build_overview_table_row(df, start_datetime):
     """
@@ -24,7 +27,7 @@ def build_overview_table_row(df, start_datetime):
     row.append(str(number_forecasts))
     
     # NUMBER OF NOT CLEAR FORECASTS
-    number_forecasts_not_clear = len(df['Predicted SEP All Clear'] == False)
+    number_forecasts_not_clear = len(df[df['Predicted SEP All Clear'] == False])
     row.append(str(number_forecasts_not_clear))
 
     # NUMBER OF FORECASTS THAT PREDICTED PEAK FLUXES ABOVE THRESHOLD
@@ -33,19 +36,21 @@ def build_overview_table_row(df, start_datetime):
         number_forecasts_above_threshold_peak_flux = 0
     else:
         thresholds = manipulate_keys.convert_threshold_key_to_float(df['Threshold Key'])
-        above_threshold_peak_flux_condition = (df['Predicted SEP Peak Intensity Max (Max Flux)'] >= thresholds) + (df['Predicted SEP Peak Intensity (Onset Peak)'] >= thresholds) > 0
-        number_forecasts_above_threshold_peak_flux = len(df[above_threshold_peak_flux_condition] == True)
+        above_threshold_peak_flux_condition = ((df['Predicted SEP Peak Intensity Max (Max Flux)'] >= thresholds) | (df['Predicted SEP Peak Intensity (Onset Peak)'] >= thresholds)) > 0
+        number_forecasts_above_threshold_peak_flux = len(df[above_threshold_peak_flux_condition])
     row.append(str(number_forecasts_above_threshold_peak_flux))
- 
+
+    '''
     # NUMBER OF THRESHOLD CROSSINGS (>10 MeV, >10 pfu)
-    threshold_crossings_10_10_condition = (df['Observed SEP All Clear'] == False) * (df['Energy Channel Key'] == 'min.10.0.max.-1.0.units.MeV') * (df['Threshold Key'] == 'threshold.10.0.units.1 / (cm2 s sr)')
-    number_threshold_crossings_10_10 = len(df[threshold_crossings_10_10_condition] == True)
+    threshold_crossings_10_10_condition = (df['Observed SEP All Clear'] == False) & (df['Energy Channel Key'] == 'min.10.0.max.-1.0.units.MeV') & (df['Threshold Key'] == 'threshold.10.0.units.1 / (cm2 s sr)')
+    number_threshold_crossings_10_10 = len(df[threshold_crossings_10_10_condition])
     row.append(str(number_threshold_crossings_10_10))
     
     # NUMBER OF THRESHOLD CROSSINGS (>100 MeV, >1 pfu)
-    threshold_crossings_100_1_condition = (df['Observed SEP All Clear'] == False) * (df['Energy Channel Key'] == 'min.100.0.max.-1.0.units.MeV') * (df['Threshold Key'] == 'threshold.1.0.units.1 / (cm2 s sr)')
-    number_threshold_crossings_100_1 = len(df[threshold_crossings_100_1_condition] == True)
+    threshold_crossings_100_1_condition = (df['Observed SEP All Clear'] == False) & (df['Energy Channel Key'] == 'min.100.0.max.-1.0.units.MeV') & (df['Threshold Key'] == 'threshold.1.0.units.1 / (cm2 s sr)')
+    number_threshold_crossings_100_1 = len(df[threshold_crossings_100_1_condition])
     row.append(str(number_threshold_crossings_100_1))
+    '''
 
     '''
     # % OF TIME ABOVE THRESHOLD (SPE, ESPE) THIS WEEK -- FROM OBSERVATIONS
@@ -60,8 +65,23 @@ def build_overview_table_row(df, start_datetime):
     number_alltime_events_spe = 
     #number_alltime_events_espe = ?
     '''    
+    df_columns = ['time_period', 'forecasts', 'not_clear_forecasts', 'above_threshold_peak_forecasts']
+    df_dict = {}
+    for i in range(0, len(df_columns)):
+        df_dict[df_columns[i]] = [row[i]]
+    df = pd.DataFrame(df_dict)
+    for column in df_columns:
+        if column != 'time_period':
+            df[column] = df[column].astype(int)
 
-    return row    
+    return row, df    
+
+def save_all_time_statistics(df):
+    df.to_feather(config.path.all_time_statistics_overview)
+
+def load_all_time_statistics():
+    df = pd.read_feather(config.path.all_time_statistics_overview)
+    return df
 
 def build_overview_section(sphinx_df, week_start, week_end, year_start, first_forecast_datetime, weekly_forecasts, yearly_forecasts):
     """
@@ -87,13 +107,35 @@ def build_overview_section(sphinx_df, week_start, week_end, year_start, first_fo
     """
     # WRITE HTML TABLE FROM LIST OF LISTS
     table_data = []
-    dataframe_segments = [weekly_forecasts, yearly_forecasts, sphinx_df]
-    start_segments = [week_start, year_start, first_forecast_datetime]
+    dataframe_segments = [weekly_forecasts, yearly_forecasts]
+    start_segments = [week_start, year_start]
+    dfs = []
     for df, start in zip(dataframe_segments, start_segments):
-        table_data.append(build_overview_table_row(df, start))
-        
-    headers = ['Time Period', 'Forecasts', 'Not Clear Forecasts', 'Above Threshold Peak Flux Forecasts', 'Threshold Crossings (>10 MeV, >10 pfu)', 'Threshold Crossings (>100 MeV, >1 pfu)']
+        row, df = build_overview_table_row(df, start)
+        table_data.append(row)
+        dfs.append(df)
     
+    # ALL-TIME ROW
+    if not config.reset_all_time_df:
+        if os.path.exists(config.path.all_time_statistics_overview):
+            df_all_time = load_all_time_statistics()
+            time_period_all_time = df_all_time['time_period'].iloc[0]
+            df_all_time = df_all_time.loc[:, df_all_time.columns != 'time_period'] + dfs[0].loc[:, dfs[0].columns != 'time_period']
+            df_all_time['time_period'] = [time_period_all_time]
+            df_all_time.insert(0, 'time_period', df_all_time.pop('time_period'))
+        else:
+            df_all_time = dfs[-1]
+    else:
+        df_all_time = dfs[-1]    
+    save_all_time_statistics(df_all_time)
+    row = []
+    for column, data in df_all_time.iteritems():
+        row.append(str(data.iloc[0]))
+    table_data.append(row)
+
+    #headers = ['Time Period', 'Forecasts', 'Not Clear Forecasts', 'Above Threshold Peak Flux Forecasts', 'Threshold Crossings (>10 MeV, >10 pfu)', 'Threshold Crossings (>100 MeV, >1 pfu)']
+
+    headers = ['Time Period', 'Forecasts', 'Not Clear Forecasts', 'Above Threshold Peak Flux Forecasts']    
     text = build_html.build_section_title('Overview')
     text += build_html.build_table(headers, table_data)
     text += build_html.build_divider()

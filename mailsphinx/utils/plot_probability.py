@@ -49,10 +49,10 @@ def plot_probability_histogram(df, save, main_model=''):
     plt.tight_layout()
     plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
     
-def build_probability_plot(model, df, savefile, week_start, week_end, events, need_legend=False):
+def build_probability_plot(model, df, savefile, week_start, week_end, events, need_legend=False, convert_image_to_base64=False):
     #plot_probability_histogram(df, savefile)
     plot_probability_time_series_group(model, df, savefile, week_start, week_end, events, need_legend=need_legend)
-    text = build_html.build_image(savefile, image_width_percentage=config.html.probability_width_percentage)
+    text = build_html.build_image(savefile, image_width_percentage=config.html.probability_width_percentage, write_as_base64=convert_image_to_base64)
     return text
 
 def plot_probability_time_series_group(name, group, save, week_start, week_end, events, colors=config.color.color_cycle, bins=20, need_legend=False):
@@ -68,7 +68,7 @@ def plot_probability_time_series_group(name, group, save, week_start, week_end, 
     ax[0].set_xlabel('UTC')
     ax[0].set_xlim([week_start, week_end])
     ax[0].set_xticklabels(ax[0].get_xticks(), rotation=45)
-    ax[0].set_ylim([0.0, 1.0])
+    ax[0].set_ylim(bottom=0.0)
     ax[0].set_ylabel('Predicted SEP Probability')
     ax[0].grid(True)
     ax[0].set_aspect(aspect='auto')

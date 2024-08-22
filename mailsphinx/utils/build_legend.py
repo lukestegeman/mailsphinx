@@ -20,10 +20,12 @@ def build_legend_contingency():
                       'Misses',
                       'False Alarms',
                       'Correct Negatives',
-                      'Eruption Out of Range',
+                      #'Eruption Out of Range',
                       'Trigger/Input after Observed Phenomenon',
                       'No Matching Threshold',
-                      'Ongoing SEP Event'
+                      'Ongoing SEP Event',
+                      'Unmatched',
+                      None
                      ]               
     legend_markers = []
     legend_colors = []
@@ -37,7 +39,7 @@ def build_legend_contingency():
     return handles
 
 def build_legend_space_weather():
-    legend_labels = ['$\geq$ 1 MeV Proton Flux',
+    legend_labels =  [
                      '$\geq$ 5 MeV Proton Flux',
                      '$\geq$ 10 MeV Proton Flux',
                      '$\geq$ 30 MeV Proton Flux',
