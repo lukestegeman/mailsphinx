@@ -2,6 +2,7 @@ from ..utils import format_objects
 from ..utils import build_html
 from ..utils import config
 
+import os
 import numpy as np
 
 def build_single_stat_contingency_table(df, mode, header):
@@ -69,7 +70,12 @@ def build_contingency_table_data(df, header, mode='all', parenthesized_start_dat
             table_line_dict = dict(zip(header, [''] * len(header)))
             table_line_dict['Model Category'] = name
             table_line_dict['Model Flavor'] = subname
-            table_line_dict['All-Time Report Link'] = build_html.build_html_shortlink('https://www.youtube.com/watch?v=xvFZjo5PgG0', name + ' ' + subname)
+            #table_line_dict['All-Time Report Link'] = build_html.build_html_shortlink('https://www.youtube.com/watch?v=xvFZjo5PgG0', name + ' ' + subname)
+
+            table_line_dict['All-Time Report Link'] = build_html.build_html_shortlink(os.path.join(config.path.report, subgroup['Model'].iloc[0] + '_report.html'), name + ' ' + subname)
+
+
+
             contingency_data = compute_contingency_table_metrics(subgroup, mode=mode)
             if (parenthesized_start_datetime is not None) and (parenthesized_end_datetime is not None):
                 parenthesized_condition = (subgroup['Forecast Issue Time'] < parenthesized_end_datetime) * (subgroup['Forecast Issue Time'] >= parenthesized_start_datetime)

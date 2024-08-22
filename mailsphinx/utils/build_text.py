@@ -17,6 +17,7 @@ import pandas as pd
 import datetime
 import os
 import shutil
+import glob
 
 def build_text(is_historical=False, convert_images_to_base64=False):
     """
@@ -36,8 +37,12 @@ def build_text(is_historical=False, convert_images_to_base64=False):
         shutil.rmtree(config.path.email_image)
     if not os.path.exists(config.path.email_image):
         os.mkdir(config.path.email_image)
-  
 
+    # COLLECT HTML REPORTS AND STORE IN FILESYSTEM
+    html_files = glob.glob(os.path.join(config.path.external_report_location, '*.html'))
+    for f in html_files:
+        shutil.copy(f, os.path.join(config.path.report, os.path.basename(f))) 
+ 
     sphinx_df = pd.read_csv(os.path.join(config.path.dataframe, 'SPHINX_dataframe.csv'))
     print('WARNING: dataframe is ' + config.path.dataframe + os.sep + 'SPHINX_dataframe.csv')
 
@@ -63,11 +68,9 @@ def build_text(is_historical=False, convert_images_to_base64=False):
     events, _ = build_event.get_unique_events(event_forecasts)
     if event:
         html += build_event.build_event_section_new(event_forecasts, week_end) 
-        #html += build_event.build_event_section(event_forecasts, week_end)
     html += build_space_weather_summary.build_space_weather_summary(is_historical, start_datetime=week_start, end_datetime=week_end, convert_image_to_base64=convert_images_to_base64)
 
     html += build_model.build_model_section_new(sphinx_df, weekly_forecasts, week_start, week_end, events, convert_images_to_base64) 
-    #html += build_model.build_model_section(sphinx_df, weekly_forecasts, week_start, week_end)
 
     return html
 

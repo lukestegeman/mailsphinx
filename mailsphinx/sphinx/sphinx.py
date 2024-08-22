@@ -2,15 +2,14 @@
 from ..utils import send_email
 from ..utils import subscription
 from ..utils import build_text
-from ..utils import config as cfg
+from ..utils import config
 
 
 # External modules (included with Python)
 import os
-import zipfile
 import datetime
 
-
+'''
 def main(report_path, do_send_email=False):
     """
     Main MailSPHINX function.
@@ -57,6 +56,22 @@ def main(report_path, do_send_email=False):
         text = build_text.build_text(subscriber)
         
         send_email.send_email('MailSPHINX: Weekly Report [test]', text, subscriber.email, attachment, send=do_send_email)
+'''
+
+def main(do_send_email=False, historical=False):
+    """
+    """
+
+    # GENERATE EMAIL CONTENT
+    html = build_text.build_text(historical=historical, convert_images_to_base64=True)
+    
+    # SEND EMAIL TO ALL RECIPIENTS
+    #if do_send_email:
+    #    send_email.send_email('MailSPHINX: Weekly Report [test]', html, ...)
+        
+    
+     
+    
 
     
 

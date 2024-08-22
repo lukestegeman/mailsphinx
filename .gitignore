@@ -2,6 +2,7 @@
 dataframes/
 email_images/
 filesystem/
+external_datapath/
 **/reports/*
 **/zips/*
 *.html
