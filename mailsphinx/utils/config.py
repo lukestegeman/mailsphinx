@@ -20,6 +20,9 @@ class Path:
         self.email_image = os.path.abspath('./email_images/')
         self.static_image = os.path.abspath('./static_images/')
         self.all_time_statistics_overview = os.path.abspath(os.path.join(self.report, 'all_time_statistics_overview.feather'))
+        self.external_report_location = os.path.abspath('./external_datapath/202401/reports/')
+        self.external_dataframe_location = os.path.abspath('./external_datapath/202401/output/SPHINX_dataframe.csv')
+
 path = Path()
 
 class Time:
