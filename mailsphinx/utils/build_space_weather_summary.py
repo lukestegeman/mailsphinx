@@ -169,6 +169,7 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
     ax_proton.set_ylabel('GOES Integral Proton Flux [proton cm$^\mathregular{-2}$ sr$^\mathregular{-1}$ s$^\mathregular{-1}$]')
 
     plt.tight_layout()
+    #fig.patch.set_facecolor('green')
     plt.subplots_adjust(left=config.html.left_padding_fraction) 
     plt.savefig(os.path.join(config.path.email_image, 'goes-flux.jpg'), dpi=config.image.dpi // 2, bbox_inches=0) 
     plt.close()

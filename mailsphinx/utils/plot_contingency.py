@@ -72,7 +72,8 @@ def plot_contingency_table(df, save, title, start_datetime, end_datetime, events
 
 
     plt.tight_layout()
-    plt.subplots_adjust(left=config.html.left_padding_fraction)
+    #fig.patch.set_facecolor('red')
+    plt.subplots_adjust(left=config.html.left_padding_fraction, right=0.9)
     plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
     plt.close()
 

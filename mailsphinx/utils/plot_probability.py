@@ -85,12 +85,15 @@ def plot_probability_time_series_group(name, group, save, week_start, week_end, 
     plt.subplots_adjust(wspace=0)
     for i in range(0, len(ax)):
         for spine in ax[i].spines.values():
-            spine.set_linewidth(4)
+            spine.set_linewidth(1)
+            #spine.set_linewidth(4)
     
     if need_legend:
         ax[1].legend(loc='upper right')
     plt.tight_layout(pad=0.5)
-    plt.subplots_adjust(left=config.html.left_padding_fraction / config.html.probability_width_percentage * 100)
+    #fig.patch.set_facecolor('blue')
+    #plt.subplots_adjust(left=config.html.left_padding_fraction / config.html.probability_width_percentage * 100)
+    plt.subplots_adjust(left=config.html.left_padding_fraction * 0.875)
     plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
     plt.close()
     
