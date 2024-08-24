@@ -1,5 +1,5 @@
-import re
 import pandas as pd
+import re
 
 # FILTERING
 def extract_common_substring(s):

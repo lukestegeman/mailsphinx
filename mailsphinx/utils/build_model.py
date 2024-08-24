@@ -1,31 +1,17 @@
 from ..utils import build_html
-from ..utils import tabulate_contingency_metrics
-from ..utils import plot_peak_flux
-from ..utils import plot_probability
-from ..utils import plot_contingency
+from ..utils import config
 from ..utils import filter_objects
 from ..utils import manipulate_keys
-from ..utils import config
+from ..utils import plot_contingency
+from ..utils import plot_peak_flux
+from ..utils import plot_probability
+from ..utils import tabulate_contingency_metrics
 
-import os
 import numpy as np
+import os
 
-def build_model_section(df, weekly_df, week_start, week_end):
-    text = build_html.build_section_title('Model Performance')
-    text += tabulate_contingency_metrics.build_all_clear_contingency_table(df, week_start, week_end)
-    #text += tabulate_contingency_metrics.build_false_alarm_table(weekly_df)
-    counter = 0
-    for name, group in weekly_df.groupby('Energy Channel Key'):
-        text += plot_peak_flux.build_peak_flux_plot(group, os.path.join(config.path.email_image, f'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg'))
-        counter += 1
-    counter = 0
-    text += build_html.build_paragraph_title('Probability Histograms')
-    for name, group in weekly_df.groupby('Model Category'): 
-        if not filter_objects.is_column_empty(group, 'Predicted SEP Probability'):
-            text += plot_probability.build_probability_plot(group, os.path.join(config.path.email_image, 'probability-histogram-' + str(counter) + '.jpg'))
-    return text
 
-def build_model_section_new(df, weekly_df, week_start, week_end, events, convert_images_to_base64=False):
+def build_model_section(df, weekly_df, week_start, week_end, events, convert_images_to_base64=False):
     text = build_html.build_section_title('Model Performance')
 
     # MAKE CONTINGENCY TIMELINES

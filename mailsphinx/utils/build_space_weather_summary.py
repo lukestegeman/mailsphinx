@@ -1,15 +1,17 @@
-from ..utils import manipulate_dates
 from ..utils import build_html
 from ..utils import build_legend
 from ..utils import config
+from ..utils import manipulate_dates
 
-import requests
-import pandas as pd
-import numpy as np
 import io
-import matplotlib.pyplot as plt
-import os
 import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import pandas as pd
+import requests
+import warnings
+
 plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize 
 
@@ -165,12 +167,16 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
     ax_proton.set_yscale('log')
     ax_proton.set_ylim([10 ** (-1), max(1e+2, np.max(df_proton['>=5 MeV']))])
     ax_proton.set_xlabel('UTC')
-    ax_proton.set_xticklabels(ax_proton.get_xticklabels(), rotation=45)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        ax_proton.set_xticklabels(ax_proton.get_xticklabels(), rotation=45)
     ax_proton.set_ylabel('GOES Integral Proton Flux [proton cm$^\mathregular{-2}$ sr$^\mathregular{-1}$ s$^\mathregular{-1}$]')
 
-    plt.tight_layout()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=UserWarning)
+        plt.tight_layout()
     #fig.patch.set_facecolor('green')
     plt.subplots_adjust(left=config.html.left_padding_fraction) 
-    plt.savefig(os.path.join(config.path.email_image, 'goes-flux.jpg'), dpi=config.image.dpi // 2, bbox_inches=0) 
+    plt.savefig(os.path.join(config.path.email_image, 'goes-flux.jpg'), dpi=config.image.dpi, bbox_inches=0) 
     plt.close()
 

@@ -1,9 +1,9 @@
 from ..utils import config
 
-import os
-import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.lines
+import matplotlib.pyplot as plt
+import os
 
 def build_legend():
     fig, ax = plt.subplots(figsize=(config.image.width, config.image.height))

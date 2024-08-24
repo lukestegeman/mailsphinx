@@ -1,10 +1,10 @@
-from ..utils import build_html 
-from ..utils import scoreboard_call
-from ..utils import manipulate_keys
-from ..utils import format_objects
-from ..utils import tabulate_contingency_metrics
 from ..utils import build_color
+from ..utils import build_html 
 from ..utils import config
+from ..utils import format_objects
+from ..utils import manipulate_keys
+from ..utils import scoreboard_call
+from ..utils import tabulate_contingency_metrics
 
 import pandas as pd
 
@@ -92,22 +92,12 @@ def build_model_event_forecasts(event_forecasts):
             text += tabulate_contingency_metrics.build_single_stat_contingency_table(df_energy, mode='miss', header=contingency_stat_header)
     return text
 
+
 def build_event_section(event_forecasts, end_datetime):
     text = ''
     text += build_html.build_section_title('Events')
     text += build_html.build_paragraph_title('Scoreboard Links')
     text += build_ccmc_scoreboard_links(event_forecasts, end_datetime)
     text += build_event_summary(event_forecasts)
-    #text += build_model_event_forecasts(event_forecasts) 
-    text += build_html.build_divider()
-    return text
-
-def build_event_section_new(event_forecasts, end_datetime):
-    text = ''
-    text += build_html.build_section_title('Events')
-    text += build_html.build_paragraph_title('Scoreboard Links')
-    text += build_ccmc_scoreboard_links(event_forecasts, end_datetime)
-    text += build_event_summary(event_forecasts)
-    #text += build_model_event_forecasts(event_forecasts) 
     text += build_html.build_divider()
     return text

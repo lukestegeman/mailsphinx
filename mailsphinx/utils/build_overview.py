@@ -1,9 +1,10 @@
-from ..utils import manipulate_keys
 from ..utils import build_html
 from ..utils import config
+from ..utils import manipulate_keys
 
 import os
 import pandas as pd
+
 # BUILD OVERVIEW SECTION
 def build_overview_table_row(df, start_datetime):
     """
@@ -77,10 +78,10 @@ def build_overview_table_row(df, start_datetime):
     return row, df    
 
 def save_all_time_statistics(df):
-    df.to_feather(config.path.all_time_statistics_overview)
+    df.to_pickle(config.path.all_time_statistics_overview)
 
 def load_all_time_statistics():
-    df = pd.read_feather(config.path.all_time_statistics_overview)
+    df = pd.read_pickle(config.path.all_time_statistics_overview)
     return df
 
 def build_overview_section(sphinx_df, week_start, week_end, year_start, first_forecast_datetime, weekly_forecasts, yearly_forecasts):

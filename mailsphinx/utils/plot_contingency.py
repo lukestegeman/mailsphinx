@@ -2,13 +2,13 @@ from ..utils import build_html
 from ..utils import config
 
 import datetime
-import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
+import pandas as pd
+
 plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize
 plt.rcParams['axes.prop_cycle'] = plt.cycler(color=config.color.color_cycle)
-
 
 def get_contingency_df_dict(df):
     hit_condition =              (df['Observed SEP All Clear'] == False) & (df['Predicted SEP All Clear'] == False)
