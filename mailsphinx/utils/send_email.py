@@ -1,19 +1,17 @@
-import pandas as pd
-import smtplib
+from ..utils import config
+
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email.utils import COMMASPACE, formatdate
 from email import encoders
-from pathlib import Path
+
 import os
+import pandas as pd
+import smtplib
 
-from ..utils import config as cfg
-
-
-
-
-def send_email(subject, body, recipient, attachment=None, send=False):
+def send_email(subject, body, recipient, send=False):
     """
     Creates an email with an arbitrary number of recipients and attachments.
 
@@ -42,29 +40,29 @@ def send_email(subject, body, recipient, attachment=None, send=False):
     message = MIMEMultipart()
     part = MIMEBase('application', 'octet-stream')
 
-    # Attach files
-    #if attachment is not None:
-    #    part.set_payload(open(attachment, 'rb').read())
-    #    encoders.encode_base64(part)
-    #    part.add_header('Content-Disposition', 'attachment; filename="' + os.path.basename(attachment) + '"')
-    #    message.attach(part)
-
     # Configure email
-    message['From'] = cfg.email.send_from
+    message['From'] = config.email.send_from
     message['To'] = recipient
     message['Subject'] = subject 
-    message['reply-to'] = cfg.email.reply_to
+    message['reply-to'] = config.email.reply_to
 
     # Attach text
     message.attach(MIMEText(body, 'html'))
 
+    # Attach images
+    for path, cid in config.image.cid_dict.items():
+        with open(path, 'rb') as image_file:
+            image = MIMEImage(image_file.read())
+            image.add_header('Content-ID', '<' + cid + '>')
+            message.attach(image)
+
     # Set up email client
-    smtp = smtplib.SMTP(cfg.email.server)
+    smtp = smtplib.SMTP(config.email.server)
     
     # Sending email
     if send:
         print('Sending email to the following address: ', recipient)
-        smtp.sendmail(cfg.email.send_from, recipient, message.as_string())
+        smtp.sendmail(config.email.send_from, recipient, message.as_string())
     else:
         print('Pretending to send email to the following address: ', recipient)
 

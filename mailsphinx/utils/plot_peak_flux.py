@@ -1,9 +1,10 @@
-from ..utils import filter_objects
 from ..utils import build_html
 from ..utils import config
+from ..utils import filter_objects
 
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
+
 plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize
 

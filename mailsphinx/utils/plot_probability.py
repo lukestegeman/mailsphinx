@@ -1,11 +1,13 @@
-from ..utils import filter_objects
 from ..utils import build_html
 from ..utils import config
+from ..utils import filter_objects
 
 import os
 import glob
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
+import warnings
+
 plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize
 plt.rcParams['axes.prop_cycle'] = plt.cycler(color=config.color.color_cycle)
@@ -57,6 +59,7 @@ def build_probability_plot(model, df, savefile, week_start, week_end, events, ne
 
 def plot_probability_time_series_group(name, group, save, week_start, week_end, events, colors=config.color.color_cycle, bins=20, need_legend=False):
 
+    
     fig, ax = plt.subplots(1, 2, figsize=(config.image.width, config.image.height), gridspec_kw={'width_ratios' : [3, 1], 'wspace' : 0}, sharey=True)
     color_counter = 0
     for subname, subgroup in group.groupby('Model Flavor'):
@@ -67,7 +70,9 @@ def plot_probability_time_series_group(name, group, save, week_start, week_end, 
     ax[0].set_title(name + ' SEP Probability')
     ax[0].set_xlabel('UTC')
     ax[0].set_xlim([week_start, week_end])
-    ax[0].set_xticklabels(ax[0].get_xticks(), rotation=45)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', UserWarning)
+        ax[0].set_xticklabels(ax[0].get_xticks(), rotation=45)
     ax[0].set_ylim(bottom=0.0)
     ax[0].set_ylabel('Predicted SEP Probability')
     ax[0].grid(True)

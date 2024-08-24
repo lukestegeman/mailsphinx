@@ -1,5 +1,5 @@
-from ..utils import format_objects
 from ..utils import config
+from ..utils import format_objects
 
 import datetime
 import os
@@ -84,8 +84,10 @@ def build_image(image_filename, base_indent=0, image_width_percentage=100, write
     text += (base_indent + 3) * config.html.indent + '<div align="center" class="alignment" style="line-height:10px">\n'
     if write_as_base64:
         text += (base_indent + 4) * config.html.indent + '<div style="max-width: ' + config.html.max_width + ';"><img height="auto" src="' + convert_image_to_base64(image_filename) + '" style="display: block; height: auto; border: 0; width: ' + str(image_width_percentage) + '%;" width="' + config.html.max_width.rstrip('px') + '"/></div>\n'  
-    else: 
-        text += (base_indent + 4) * config.html.indent + '<div style="max-width: ' + config.html.max_width + ';"><img height="auto" src="' + image_filename + '" style="display: block; height: auto; border: 0; width: ' + str(image_width_percentage) + '%;" width="' + config.html.max_width.rstrip('px') + '"/></div>\n'
+    else:
+        config.image.cid_dict[image_filename] = 'image' + str(config.image.cid_dict_index)
+        config.image.cid_dict_index += 1
+        text += (base_indent + 4) * config.html.indent + '<div style="max-width: ' + config.html.max_width + ';"><img height="auto" src="cid:' + config.image.cid_dict[image_filename] + '" style="display: block; height: auto; border: 0; width: ' + str(image_width_percentage) + '%;" width="' + config.html.max_width.rstrip('px') + '"/></div>\n'
     text += (base_indent + 3) * config.html.indent + '</div>\n'
     text += (base_indent + 2) * config.html.indent + '</td>\n'
     text += (base_indent + 1) * config.html.indent + '</tr>\n'

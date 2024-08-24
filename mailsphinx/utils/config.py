@@ -1,7 +1,8 @@
 # Configuration file
 import datetime
-import pytz
 import os
+import pytz
+
 
 # Email configuration
 class Email:
@@ -13,16 +14,16 @@ email = Email()
 
 class Path:
     def __init__(self):
-        self.report = os.path.abspath('./filesystem/public/viewable/')
+        self.filesystem = os.path.abspath('./filesystem/public/viewable/')
+        self.report = os.path.abspath(os.path.join(self.filesystem, 'report'))
         self.dataframe = os.path.abspath('./dataframes/')
-        self.plot = os.path.abspath('../sphinxval/output/plots/')
         self.email_header_template = os.path.abspath('./template/email_header.html')
         self.email_image = os.path.abspath('./email_images/')
         self.static_image = os.path.abspath('./static_images/')
-        self.all_time_statistics_overview = os.path.abspath(os.path.join(self.report, 'all_time_statistics_overview.feather'))
+        self.all_time_statistics_overview = os.path.abspath(os.path.join(self.filesystem, 'other', 'all_time_statistics_overview.pkl'))
         self.external_report_location = os.path.abspath('./external_datapath/202401/reports/')
         self.external_dataframe_location = os.path.abspath('./external_datapath/202401/output/SPHINX_dataframe.csv')
-
+        self.email_storage = os.path.abspath(os.path.join(self.filesystem, 'email'))
 path = Path()
 
 class Time:
@@ -144,12 +145,14 @@ shape = Shape()
 
 class Image:
     def __init__(self):
-        self.dpi = 600
+        self.dpi = 72
         self.width = 12
         self.height = 6
         self.height_contingency = 3
         self.peak_flux_width = 8 
         self.peak_flux_height = 6
+        self.cid_dict = {}
+        self.cid_dict_index = 0
 image = Image()
 
 class Plot:

@@ -1,9 +1,9 @@
-from ..utils import format_objects
 from ..utils import build_html
 from ..utils import config
+from ..utils import format_objects
 
-import os
 import numpy as np
+import os
 
 def build_single_stat_contingency_table(df, mode, header):
     if mode == 'hit':

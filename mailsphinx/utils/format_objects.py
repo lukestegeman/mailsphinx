@@ -1,8 +1,9 @@
-import pandas as pd
-import numpy as np
-import re
-import datetime
+from ..utils import config
 
+import datetime
+import numpy as np
+import pandas as pd
+import re
 
 # FORMATTING
 def format_data(value):
@@ -60,3 +61,18 @@ def format_flux_threshold(value):
 def format_parenthesized_entry(a, b):
     entry = str(a) + ' (+' + str(b) + ')'
     return entry
+
+def convert_cids_to_image_paths(text):
+    pattern = r'src="cid:([^"]*")'
+    matches = re.findall(pattern, text)
+    swapped_dict = {value : key for key, value in config.image.cid_dict.items()}
+    for match in matches:
+        text = text.replace('cid:' + match, swapped_dict[match[:-1]] + '"')
+    return text
+     
+    
+
+
+
+
+

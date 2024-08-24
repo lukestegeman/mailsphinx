@@ -3,77 +3,61 @@ from ..utils import send_email
 from ..utils import subscription
 from ..utils import build_text
 from ..utils import config
-
+from ..utils import format_objects
 
 # External modules (included with Python)
-import os
 import datetime
+import glob
+import os
+import shutil
 
-'''
-def main(report_path, do_send_email=False):
+def main(do_send_email=False, historical=False, start_datetime=None, end_datetime=None):
     """
     Main MailSPHINX function.
         Compiles HTML reports, 
-        compiles subscribers and their preferences,
+        compiles subscribers,
         and sends SPHINX reports to subscribers via email.
 
     Parameters
     ----------
-    report_path : path, from top-level mailsphinx/ directory, to folder containing reports. 
-    """
-
-    # Collect the reports
-    if report_path[-1] != os.sep:
-        report_path += os.sep
-    reports_ = os.listdir(report_path)
-    reports = [report_path + file for file in reports_ if not file.endswith('.md')]
-
-    # Read the recipient list and apply their appropriate subscription options
-    subscribers = subscription.load_subscribers()
+    do_send_email : bool
     
-    # Attach to email and send to recipient list
-    for subscriber in subscribers:
-        print(subscriber.name, subscriber.email, subscriber.models)
+    historical : bool
+    
+    start_datetime : NoneType, datetime
 
-        # Find the reports this subscriber wants
-        reports_to_compress = []
-        for model in subscriber.models:
-            model_filename = report_path + model + '_report.html'
-            if model_filename in reports:
-                reports_to_compress.append(model_filename)
-
-        # Apply compression
-        #attachment = 'zips/sphinx-weekly-reports.zip'
-        #with zipfile.ZipFile(attachment, 'w') as z:
-        #    for report in reports_to_compress:
-        #        print(report)
-        #        _, tail = os.path.split(report)
-        #        z.write(report, arcname=tail)
-        #print('Reports have been compressed into ', attachment)
-
-        attachment = None        
-
-        text = build_text.build_text(subscriber)
-        
-        send_email.send_email('MailSPHINX: Weekly Report [test]', text, subscriber.email, attachment, send=do_send_email)
-'''
-
-def main(do_send_email=False, historical=False):
+    end_datetime : NoneType, datetime 
     """
-    """
+
+    # RESET IMAGES
+    if os.path.exists(config.path.email_image):
+        print('deleting...')
+        shutil.rmtree(config.path.email_image)
+    if not os.path.exists(config.path.email_image):
+        os.mkdir(config.path.email_image)
+
+    # COLLECT HTML REPORTS AND STORE IN FILESYSTEM
+    html_files = glob.glob(os.path.join(config.path.external_report_location, '*.html'))
+    for f in html_files:
+        shutil.copy(f, os.path.join(config.path.report, os.path.basename(f))) 
 
     # GENERATE EMAIL CONTENT
-    html = build_text.build_text(historical=historical, convert_images_to_base64=True)
+    if ((start_datetime is None) or (end_datetime is None)) and historical:
+        historical = False
+        print('Missing start_datetime or end_datetime; setting historical = False.') 
+    html = build_text.build_text(is_historical=historical, convert_images_to_base64=False, start_datetime=start_datetime, end_datetime=end_datetime)
     
-    # SEND EMAIL TO ALL RECIPIENTS
-    #if do_send_email:
-    #    send_email.send_email('MailSPHINX: Weekly Report [test]', html, ...)
-        
-    
-     
-    
+    # SAVE IN FILESYSTEM
+    savefile = os.path.join(config.path.email_storage, 'mailsphinx_' + config.time.generation_time.replace(' ', '_').replace(':', '') + '.html')
+    html_webpage_text = format_objects.convert_cids_to_image_paths(html)
 
-    
+    a = open(savefile, 'w')
+    a.write(html_webpage_text)
+    a.close()
+
+    # SEND EMAIL TO ALL RECIPIENTS
+    if do_send_email:
+        send_email.send_email('MailSPHINX: Weekly Report [test]', html, 'luke.a.stegeman@nasa.gov', send=do_send_email)
 
 
 
