@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 import os
 
 def build_legend():
-    fig, ax = plt.subplots(figsize=(config.image.width, config.image.height))
+    fig, ax = plt.subplots(figsize=(config.image.width_legend, config.image.height_legend))
     handles = []
     handles += build_legend_contingency()
     handles += build_legend_space_weather()
     ax.legend(handles=handles, loc='center', ncol=2, borderpad=0, borderaxespad=0, frameon=False)
     ax.axis('off')
-    plt.tight_layout()
+    plt.tight_layout(pad=0.1)
     plt.savefig(os.path.join(config.path.email_image, 'legend.jpg'), bbox_inches='tight', pad_inches=0.0, transparent=True, dpi=config.image.dpi)
 
 def build_legend_contingency():

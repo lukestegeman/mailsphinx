@@ -154,6 +154,8 @@ class Image:
         self.peak_flux_height = 6
         self.cid_dict = {}
         self.cid_dict_index = 0
+        self.width_legend = 6
+        self.height_legend = 3
 image = Image()
 
 class Plot:

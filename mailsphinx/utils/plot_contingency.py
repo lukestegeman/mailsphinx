@@ -54,14 +54,26 @@ def plot_contingency_table(df, save, title, start_datetime, end_datetime, events
 
     for index, event in events.iterrows():
         ax.axvspan(event['Observed SEP Threshold Crossing Time'], event['Observed SEP End Time'], color=config.color.associations[event['Energy']], alpha=config.plot.opacity)
-    ax.set_xlabel('UTC')
     ax.set_xlim([start_datetime, end_datetime])
     ax.set_yticks(range(len(reversed_categories)))
     ax.set_yticklabels(reversed_categories)
     ax.set_ylim([-0.2, 4.2])
     ax.set_title(title)
-    ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d'))
-    fig.autofmt_xdate()
+
+    xticks = pd.date_range(start_datetime, end_datetime)
+    ax.set_xticks(xticks)
+    counter = 0
+    labels = []
+    for date in ax.get_xticklabels():
+        if counter == 0 or counter == len(ax.get_xticklabels()) - 1:
+            label = date
+        else:
+            label = ''
+        labels.append(label)
+        counter += 1
+    ax.set_xticklabels(labels)
+    #ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m-%d'))
+    fig.autofmt_xdate(rotation=0, ha='center')
     for tick in ax.get_xticks():
         ax.axvline(x=tick, color='gray', linewidth=0.5)
 

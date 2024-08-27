@@ -166,7 +166,6 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
     ax_proton.grid(axis='both')
     ax_proton.set_yscale('log')
     ax_proton.set_ylim([10 ** (-1), max(1e+2, np.max(df_proton['>=5 MeV']))])
-    ax_proton.set_xlabel('UTC')
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', category=UserWarning)
         ax_proton.set_xticklabels(ax_proton.get_xticklabels(), rotation=45)
