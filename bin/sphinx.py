@@ -19,7 +19,7 @@ args.end_datetime = datetime.datetime.strptime(args.end_datetime, '%Y-%m-%d').re
 # Main program
 mailsphinx.sphinx.main(args.send_email, args.historical_mode, args.start_datetime, args.end_datetime)
 print("WARNING: If you are not on the NASA network, you will not be able to run MailSPHINX. Turn on VPN if you're offsite!")
-print("WARNING: You'll need the Google Sheets API JSON key to run MailSPHINX. Ask for it if you need it.")
+#print("WARNING: You'll need the Google Sheets API JSON key to run MailSPHINX. Ask for it if you need it.")
 
 
 

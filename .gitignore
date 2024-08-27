@@ -2,6 +2,7 @@
 dataframes/
 email_images/
 filesystem/
+no_share/
 external_datapath/
 **/reports/*
 **/zips/*
