@@ -24,6 +24,7 @@ class Path:
         self.external_report_location = os.path.abspath('./external_datapath/202401/reports/')
         self.external_dataframe_location = os.path.abspath('./external_datapath/202401/output/SPHINX_dataframe.csv')
         self.email_storage = os.path.abspath(os.path.join(self.filesystem, 'email'))
+        self.subscriber_data = os.path.abspath('./no_share/subscribers.csv')
 path = Path()
 
 class Time:
@@ -277,7 +278,6 @@ class Type:
                           }
 type = Type()
 
+# CAREFUL WITH THESE
 reset_all_time_df = False
 
-# Website configuration
-google_script_url = 'https://script.google.com/macros/s/AKfycbw69r0XJSpISEFmE8X8Sb2_BKQIZOmBNaU8bzcAy0GwvNfvscFwmd0UH6AsxSVnxTg-/exec'

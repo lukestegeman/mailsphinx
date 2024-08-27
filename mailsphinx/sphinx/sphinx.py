@@ -55,9 +55,13 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
     a.write(html_webpage_text)
     a.close()
 
+    # COLLECT SUBSCRIBERS
+    subscribers = subscription.load_subscribers()
+
     # SEND EMAIL TO ALL RECIPIENTS
     if do_send_email:
-        send_email.send_email('MailSPHINX: Weekly Report [test]', html, 'luke.a.stegeman@nasa.gov', send=do_send_email)
+        for subscriber in subscribers:
+            send_email.send_email('MailSPHINX: Weekly Report [test]', html, subscriber.email, send=do_send_email)
 
 
 
