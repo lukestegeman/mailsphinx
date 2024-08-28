@@ -3,6 +3,7 @@ import datetime
 import os
 import pytz
 
+from ..utils import build_color
 
 # Email configuration
 class Email:
@@ -61,29 +62,38 @@ class Relabel:
                              }
 relabel = Relabel()
 
+class Plot:
+    def __init__(self):
+        self.font = 'Arial'
+        self.fontsize = 16
+        self.marker_size = 100
+        self.opacity = 0.3
+plot = Plot()
 
 class Color:
     def __init__(self):
-        self.associations = {'Hits'                  : '#2e7d32',
-                             'Correct Negatives'     : '#0b3d91',
-                             'Misses'                : '#c62828',
-                             'False Alarms'          : '#f57f17',
-                             'Neutral'               : '#0e1111',
-                             'Not Evaluated'         : '#000000',
-                             'Long X-Ray Flux'       : '#ffa500',
-                             'Short X-Ray Flux'      : '#5400a8',
-                             '>=1 MeV Proton Flux'   : '#b3b3b3',
-                             '>=5 MeV Proton Flux'   : '#ffd480',
-                             '>=10 MeV Proton Flux'  : '#ff0000',
-                             '>=30 MeV Proton Flux'  : '#6b3d9a',
-                             '>=50 MeV Proton Flux'  : '#0000ff',
-                             '>=60 MeV Proton Flux'  : '#000000',
-                             '>=100 MeV Proton Flux' : '#00ff00',
-                             '>=500 MeV Proton Flux' : '#f39c12',
-                             'Probability Color Main': '#7814e3',
-                             'Probability Color Sub' : '#c90eb7',
-                             'Divider'               : '#d92906',
-                             'Eruption Out of Range' : '#000000',
+        self.associations = {'Hits'                    : '#2e7d32',
+                             'Correct Negatives'       : '#0b3d91',
+                             'Misses'                  : '#c62828',
+                             'False Alarms'            : '#f57f17',
+                             'Neutral'                 : '#0e1111',
+                             'Not Evaluated'           : '#000000',
+                             'Long X-Ray Flux'         : '#ffa500',
+                             'Short X-Ray Flux'        : '#5400a8',
+                             '>=1 MeV Proton Flux'     : '#b3b3b3',
+                             '>=5 MeV Proton Flux'     : '#ffd480',
+                             '>=10 MeV Proton Flux'    : '#ff0000',
+                             '>=30 MeV Proton Flux'    : '#6b3d9a',
+                             '>=50 MeV Proton Flux'    : '#0000ff',
+                             '>=60 MeV Proton Flux'    : '#000000',
+                             '>=100 MeV Proton Flux'   : '#00ff00',
+                             '>=500 MeV Proton Flux'   : '#f39c12',
+                             '38-53 keV Electron Flux' : '#808080',
+                             '175-315 keV Electron Flux' : '#00faff',
+                             'Probability Color Main'  : '#7814e3',
+                             'Probability Color Sub'   : '#c90eb7',
+                             'Divider'                 : '#d92906',
+                             'Eruption Out of Range'   : '#000000',
                              'Trigger/Input after Observed Phenomenon' : '#000000',
                              'No Matching Threshold' : '#000000',
                              'Ongoing SEP Event' : '#000000',
@@ -98,10 +108,12 @@ class Color:
         self.associations['&ge; 60'] = self.associations['>=60 MeV Proton Flux']
         self.associations['&ge; 100'] = self.associations['>=100 MeV Proton Flux']
         self.associations['&ge; 500'] = self.associations['>=500 MeV Proton Flux']
-
-
-
-
+       
+        self.associations['>=10 MeV, >=10 pfu Event'] = build_color.get_transparent_color(self.associations['>=10 MeV Proton Flux'], plot.opacity)
+        self.associations['>=30 MeV, >=1 pfu Event'] = build_color.get_transparent_color(self.associations['>=30 MeV Proton Flux'], plot.opacity)
+        self.associations['>=50 MeV, >=1 pfu Event'] = build_color.get_transparent_color(self.associations['>=50 MeV Proton Flux'], plot.opacity)
+        self.associations['>=100 MeV, >=1 pfu Event'] = build_color.get_transparent_color(self.associations['>=100 MeV Proton Flux'], plot.opacity)
+ 
         self.color_cycle = ['#000000',  # Black
                             '#17becf',  # Cyan
                             '#7f7f7f',  # Gray
@@ -157,14 +169,6 @@ class Image:
         self.width_legend = 6
         self.height_legend = 3
 image = Image()
-
-class Plot:
-    def __init__(self):
-        self.font = 'Arial'
-        self.fontsize = 16
-        self.marker_size = 100
-        self.opacity = 0.3
-plot = Plot()
 
 class Index:
     def __init__(self):
@@ -279,6 +283,21 @@ class Type:
                           'Last Data Time to Issue Time' : float  
                           }
 type = Type()
+
+class Order:
+    def __init__(self):
+        self.energy_order = [1, 5, 10, 30, 50, 60, 100, 500]
+        self.energy_key_order = ['min.1.0.max.-1.0.units.MeV',
+                                 'min.5.0.max.-1.0.units.MeV',
+                                 'min.10.0.max.-1.0.units.MeV',
+                                 'min.30.0.max.-1.0.units.MeV',
+                                 'min.50.0.max.-1.0.units.MeV',
+                                 'min.60.0.max.-1.0.units.MeV',
+                                 'min.100.0.max.-1.0.units.MeV',
+                                 'min.500.0.max.-1.0.units.MeV'
+                                ]
+order = Order()
+
 
 # CAREFUL WITH THESE
 reset_all_time_df = False

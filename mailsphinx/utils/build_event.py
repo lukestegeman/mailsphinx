@@ -1,4 +1,3 @@
-from ..utils import build_color
 from ..utils import build_html 
 from ..utils import config
 from ..utils import format_objects
@@ -48,7 +47,7 @@ def get_unique_events(event_forecasts):
     unique_events['Energy'] = unique_events['Energy Channel Key Surrogate'].apply(format_objects.format_energy_threshold)
     unique_events['Flux Threshold'] = unique_events['Threshold Key Surrogate'].apply(format_objects.format_flux_threshold)
     unique_events = unique_events.sort_values(by=['Observed SEP Threshold Crossing Time Surrogate', 'Energy Channel Key Surrogate', 'Threshold Key Surrogate'])
-    unique_events = unique_events.drop(columns=['Observed SEP Threshold Crossing Time Surrogate', 'Threshold Key Surrogate'])
+    unique_events = unique_events.drop(columns=['Observed SEP Threshold Crossing Time Surrogate'])
     unique_events = format_objects.format_df_datetime(unique_events)
     return unique_events, observables
     
@@ -61,7 +60,7 @@ def build_event_summary(event_forecasts, base_indent=0):
     for key, value in observables.items():
         appendage = ''
         if value != '':
-            appendage = ' [' + value + ']'
+            appendage = '<br>[' + value + ']'
         headers_with_units.append(config.relabel.event_summary[key] + appendage)
     table_data = []
     table_data_color_dict = {}
@@ -72,7 +71,7 @@ def build_event_summary(event_forecasts, base_indent=0):
             row_data.append(format_objects.format_data(row[header]))
         table_data.append(row_data)
         for i in range(0, len(row_data)): 
-            table_data_color_dict[(row_counter, i)] = build_color.get_transparent_color(config.color.associations['>=' + str(int(row['Energy Channel Key Surrogate'])) + ' MeV Proton Flux'], config.plot.opacity)
+            table_data_color_dict[(row_counter, i)] = config.color.associations['>=' + str(int(row['Energy Channel Key Surrogate'])) + ' MeV, >=' + str(int(row['Threshold Key Surrogate'])) + ' pfu Event']
         row_counter += 1
     text += build_html.build_table(headers_with_units, table_data, table_color_dict=table_data_color_dict)
     return text
@@ -91,7 +90,6 @@ def build_model_event_forecasts(event_forecasts):
             text += tabulate_contingency_metrics.build_single_stat_contingency_table(df_energy, mode='hit', header=contingency_stat_header)
             text += tabulate_contingency_metrics.build_single_stat_contingency_table(df_energy, mode='miss', header=contingency_stat_header)
     return text
-
 
 def build_event_section(event_forecasts, end_datetime):
     text = ''

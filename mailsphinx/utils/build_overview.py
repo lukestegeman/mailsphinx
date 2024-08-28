@@ -6,7 +6,7 @@ import os
 import pandas as pd
 
 # BUILD OVERVIEW SECTION
-def build_overview_table_row(df, start_datetime):
+def build_overview_table_row(df, start_datetime, text=''):
     """
     Builds a table row for the Overview section of the email body.
     
@@ -21,7 +21,7 @@ def build_overview_table_row(df, start_datetime):
     row : list of string
     """
     row = []
-    row.append('Since ' + start_datetime.strftime('%Y-%m-%d %H:%M'))
+    row.append(text + 'Since ' + start_datetime.strftime('%Y-%m-%d %H:%M'))
    
     # NUMBER OF FORECASTS 
     number_forecasts = len(df)
@@ -110,9 +110,10 @@ def build_overview_section(sphinx_df, week_start, week_end, year_start, first_fo
     table_data = []
     dataframe_segments = [weekly_forecasts, yearly_forecasts]
     start_segments = [week_start, year_start]
+    texts = ['This Week: ', 'This Year: ']
     dfs = []
-    for df, start in zip(dataframe_segments, start_segments):
-        row, df = build_overview_table_row(df, start)
+    for df, start, text in zip(dataframe_segments, start_segments, texts):
+        row, df = build_overview_table_row(df, start, text)
         table_data.append(row)
         dfs.append(df)
     
@@ -130,8 +131,14 @@ def build_overview_section(sphinx_df, week_start, week_end, year_start, first_fo
         df_all_time = dfs[-1]    
     save_all_time_statistics(df_all_time)
     row = []
+    counter = 0
     for column, data in df_all_time.iteritems():
-        row.append(str(data.iloc[0]))
+        if counter == 0:
+            appendage = 'All Time: '
+        else:
+            appendage = ''
+        row.append(appendage + str(data.iloc[0]))
+        counter += 1
     table_data.append(row)
 
     #headers = ['Time Period', 'Forecasts', 'Not Clear Forecasts', 'Above Threshold Peak Flux Forecasts', 'Threshold Crossings (>10 MeV, >10 pfu)', 'Threshold Crossings (>100 MeV, >1 pfu)']

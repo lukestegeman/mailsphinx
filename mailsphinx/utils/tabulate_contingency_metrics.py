@@ -108,11 +108,13 @@ def build_contingency_table_data(df, header, mode='all', parenthesized_start_dat
 
 
 def build_all_clear_contingency_table(df, week_start, week_end):
-    text = build_html.build_paragraph_title('All Clear Contingency Table')
+    text = build_html.build_paragraph_title('All Clear Contingency Tables')
+    text += build_html.build_regular_text("Values are given in the form X (+Y), where X is the all-time quantity, and Y is the quantity added from this week's results. X is inclusive of Y.")
     headers = ['Model Category', 'Model Flavor', 'Hits', 'Misses', 'False Alarms', 'Correct Negatives', 'Forecasts', 'All-Time Report Link']
     header_color_dict = dict(zip(headers, [None, None, config.color.associations['Hits'], config.color.associations['Misses'], config.color.associations['False Alarms'], config.color.associations['Correct Negatives'], None, None]))
     table_data, table_color_dict, table_text_color_dict = build_contingency_table_data(df, headers, 'all', week_start, week_end)
     text += build_html.build_table(headers, table_data, header_color_dict=header_color_dict, table_color_dict=table_color_dict, table_text_color_dict=table_text_color_dict)
+    text += build_html.build_divider()
     return text
 
 def build_false_alarm_table(df):

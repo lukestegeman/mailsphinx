@@ -16,9 +16,10 @@ plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize 
 
 def build_space_weather_summary(historical=False, start_datetime=None, end_datetime=None, convert_image_to_base64=False):
-    goes_proton_df = download_goes_flux(flux_type='proton', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
-    goes_xray_df = download_goes_flux(flux_type='xray', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
-    plot_goes_flux(goes_xray_df, goes_proton_df, historical=historical)
+    goes_proton_df = download_flux(flux_type='proton', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
+    goes_xray_df = download_flux(flux_type='xray', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
+    ace_electron_df = download_flux(flux_type='electron', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
+    plot_flux(goes_xray_df, goes_proton_df, ace_electron_df, historical=historical)
     text = build_html.build_section_title('Space Weather Summary')
     # MAKE LEGEND
     build_legend.build_legend()
@@ -43,12 +44,50 @@ def rerequest(url, tries=0):
     # end the requesting process if tries > 5
     if tries > 5:
         raise Exception(url + " refuses to respond after 5 attempts. Exiting.")
-
     try:
         output = requests.get(url, timeout=10.0)
         return output
     except requests.exceptions.Timeout as e:
         return rerequest(url, tries + 1)
+
+def download_flux(flux_type, historical=False, start_datetime=None, end_datetime=None):
+    if flux_type == 'proton' or flux_type == 'xray':
+        df = download_goes_flux(flux_type, historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
+    elif flux_type == 'electron':
+        df = download_ace_epam_flux(flux_type, historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
+    return df
+
+def download_ace_epam_flux(flux_type, historical=False, start_datetime=None, end_datetime=None): 
+    if historical:
+        assert(start_datetime is not None), 'start_datetime cannot be None in historical mode.'
+        assert(end_datetime is not None), 'end_datetime cannot be None in historical mode.'
+        if end_datetime < config.time.iswa_minimum_time:
+            print('WARNING: ISWA does not carry data prior to 2010-04-14T00:00:00Z. Expect empty plots.')
+        base_url = 'https://iswa.gsfc.nasa.gov/IswaSystemWebApp/hapi/data?'
+        if flux_type == 'electron':
+            flux_type_url = 'id=ace_epam_P5M'
+        url = base_url + flux_type_url + '&time.min=' + start_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&time.max=' + end_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&format=csv'
+    else:
+        # REAL TIME
+        print('SET UP REAL TIME ELECTRON FLUX')
+        exit()
+    response = rerequest(url) 
+    if response.status_code == 200:
+        if historical:
+            data = response.text
+            df = pd.read_csv(io.StringIO(data))
+            if flux_type == 'electron':
+                df.columns = ['time_tag', '38-53 keV', '175-315 keV', '47-68 keV (protons)', '115-195 keV (protons)', '310-580 keV (protons)', '795-1193 keV (protons)', '1060-1900 keV (protons)']
+            df['time_tag'] = pd.to_datetime(df['time_tag'])
+        else:
+            data = response.json()
+            df = pd.DataFrame(data)
+            df['time_tag'] = pd.to_datetime(df['time_tag'])
+    else:
+        print(f'Failed to retrieve data. HTTP Status code: {response.status_code}')
+        print('Exiting...')
+        exit()
+    return df
 
 def download_goes_flux(flux_type, historical=False, start_datetime=None, end_datetime=None): 
     if historical:
@@ -90,19 +129,22 @@ def download_goes_flux(flux_type, historical=False, start_datetime=None, end_dat
         exit()
     return df
 
-def plot_goes_flux(df_xray, df_proton, historical=False): 
+def plot_flux(df_xray, df_proton, df_electron, historical=False): 
 
-    fig, (ax_xray, ax_proton) = plt.subplots(2, 1, sharex=True, figsize=(config.image.width, config.image.height * 2), gridspec_kw={'height_ratios' : [1, 1], 'hspace' : 0.1} )
+    fig, (ax_xray, ax_electron, ax_proton) = plt.subplots(3, 1, sharex=True, figsize=(config.image.width, config.image.height * 2.5), gridspec_kw={'height_ratios' : [2, 1, 2], 'hspace' : 0.1} )
     t_low_xray = np.min(df_xray['time_tag'])
     t_high_xray = np.max(df_xray['time_tag'])
     t_low_proton = np.min(df_proton['time_tag'])
     t_high_proton = np.max(df_proton['time_tag'])
-    t_low = manipulate_dates.round_to_nearest_day(min(t_low_xray, t_low_proton))
-    t_high = manipulate_dates.round_to_nearest_day(max(t_high_xray, t_high_proton))
+    t_low_electron = np.min(df_electron['time_tag'])
+    t_high_electron = np.max(df_electron['time_tag'])
+    t_low = manipulate_dates.round_to_nearest_day(min(min(t_low_xray, t_low_proton), t_low_electron))
+    t_high = manipulate_dates.round_to_nearest_day(max(max(t_high_xray, t_high_proton), t_high_electron))
 
     if historical:
         df_xray['time_tag_long'] = df_xray['time_tag_short'] = df_xray['time_tag']
         df_proton['time_tag_1'] = df_proton['time_tag_5'] = df_proton['time_tag_10'] = df_proton['time_tag_30'] = df_proton['time_tag_50'] = df_proton['time_tag_60'] = df_proton['time_tag_100'] = df_proton['time_tag_500'] = df_proton['time_tag']
+        df_electron['time_tag_1'] = df_electron['time_tag_2'] = df_electron['time_tag']
     else:
         long_condition = df_xray['energy'] == '0.1-0.8nm'
         short_condition = df_xray['energy'] == '0.05-0.4nm'
@@ -132,16 +174,17 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
         df_proton['>=30 MeV'] = df_proton[p30_condition]['flux']
         df_proton['>=50 MeV'] = df_proton[p50_condition]['flux']
         df_proton['>=60 MeV'] = df_proton[p60_condition]['flux']
-        df_proton['>=100 MeV'] = df_proton[p100_condition]['flux'] 
+        df_proton['>=100 MeV'] = df_proton[p100_condition]['flux']
         df_proton['>=500 MeV'] = df_proton[p100_condition]['flux']
+        print('SET UP REAL TIME ELECTRON FLUX')
+        exit()
 
     ax_xray.plot(df_xray['time_tag_long'], df_xray['long'], label='Long', color=config.color.associations['Long X-Ray Flux'])
     ax_xray.plot(df_xray['time_tag_short'], df_xray['short'], label='Short', color=config.color.associations['Short X-Ray Flux'])
-    #ax_xray.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0))
     ax_xray.grid(axis='both')
     ax_xray.set_yscale('log')
     ax_xray.set_ylim([1e-9, max(1e-2, np.max(df_xray['long']))])
-    ax_xray.set_ylabel('GOES X-Ray Flux [Watt m$^\mathregular{-2}$]')
+    ax_xray.set_ylabel('GOES X-Ray Flux\n[W m$^\mathregular{-2}$]')
     ax_xray.set_xlim([t_low, t_high])
     ax_xray_class = ax_xray.twinx()
     labels = ['A', 'B', 'C', 'M', 'X']
@@ -152,24 +195,44 @@ def plot_goes_flux(df_xray, df_proton, historical=False):
     ax_xray_class.set_yticks(positions)
     ax_xray_class.set_yticklabels(labels)
     ax_xray_class.yaxis.set_label_position('right')
-    #ax_proton.plot(df_proton['time_tag_1'], df_proton['>=1 MeV'], label='$\geq$ 1 MeV', color=config.color.associations['>=1 MeV Proton Flux'])
-    ax_proton.plot(df_proton['time_tag_5'], df_proton['>=5 MeV'], label='$\geq$ 5 MeV', color=config.color.associations['>=5 MeV Proton Flux'])
-    ax_proton.plot(df_proton['time_tag_10'], df_proton['>=10 MeV'], label='$\geq$ 10 MeV', color=config.color.associations['>=10 MeV Proton Flux'])
-    ax_proton.plot(df_proton['time_tag_30'], df_proton['>=30 MeV'], label='$\geq$ 30 MeV', color=config.color.associations['>=30 MeV Proton Flux'])
-    ax_proton.plot(df_proton['time_tag_50'], df_proton['>=50 MeV'], label='$\geq$ 50 MeV', color=config.color.associations['>=50 MeV Proton Flux'])
-    ax_proton.plot(df_proton['time_tag_60'], df_proton['>=60 MeV'], label='$\geq$ 60 MeV', color=config.color.associations['>=60 MeV Proton Flux'])
-    ax_proton.plot(df_proton['time_tag_100'], df_proton['>=100 MeV'], label='$\geq$ 100 MeV', color=config.color.associations['>=100 MeV Proton Flux']) 
-    ax_proton.plot(df_proton['time_tag_500'], df_proton['>=500 MeV'], label='$\geq$ 500 MeV', color=config.color.associations['>=500 MeV Proton Flux'])
+
+
+    # ACCOUNT FOR MISSING DATA
+    df_electron['time_difference'] = df_electron['time_tag'].diff().dt.total_seconds()
+    segments = []
+    current_segment = [df_electron.iloc[0]]
+    for i in range(1, len(df_electron)):
+        if df_electron['time_difference'].iloc[i] > 5 * 60 + 1:
+            segments.append(pd.DataFrame(current_segment))
+            current_segment = []
+        current_segment.append(df_electron.iloc[i])
+
+    for segment in segments:
+        ax_electron.plot(segment['time_tag_1'], segment['38-53 keV'], color=config.color.associations['38-53 keV Electron Flux'])
+        ax_electron.plot(segment['time_tag_2'], segment['175-315 keV'], color=config.color.associations['175-315 keV Electron Flux'])
+    ax_electron.grid(axis='both')
+    ax_electron.set_yscale('log')
+    ax_electron.set_ylim([1e+1, max(1e+4, np.max(df_electron['175-315 keV']))])
+    ax_electron.set_ylabel('ACE Differential Electron Flux\n[electron cm$^\mathregular{-2}$ sr$^\mathregular{-1}$ s$^\mathregular{-1}$ MeV$^\mathregular{-1}$]')
+
+
+    #ax_proton.plot(df_proton['time_tag_1'], df_proton['>=1 MeV'], color=config.color.associations['>=1 MeV Proton Flux'])
+    ax_proton.plot(df_proton['time_tag_5'], df_proton['>=5 MeV'], color=config.color.associations['>=5 MeV Proton Flux'])
+    ax_proton.plot(df_proton['time_tag_10'], df_proton['>=10 MeV'], color=config.color.associations['>=10 MeV Proton Flux'])
+    ax_proton.plot(df_proton['time_tag_30'], df_proton['>=30 MeV'], color=config.color.associations['>=30 MeV Proton Flux'])
+    ax_proton.plot(df_proton['time_tag_50'], df_proton['>=50 MeV'], color=config.color.associations['>=50 MeV Proton Flux'])
+    ax_proton.plot(df_proton['time_tag_60'], df_proton['>=60 MeV'], color=config.color.associations['>=60 MeV Proton Flux'])
+    ax_proton.plot(df_proton['time_tag_100'], df_proton['>=100 MeV'], color=config.color.associations['>=100 MeV Proton Flux']) 
+    ax_proton.plot(df_proton['time_tag_500'], df_proton['>=500 MeV'], color=config.color.associations['>=500 MeV Proton Flux'])
     ax_proton.plot([t_low, t_high], [10, 10], color=config.color.associations['>=10 MeV Proton Flux'], linestyle=':', linewidth=1)
     ax_proton.plot([t_low, t_high], [1, 1], color=config.color.associations['>=100 MeV Proton Flux'], linestyle=':', linewidth=1)
-    #ax_proton.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0))
     ax_proton.grid(axis='both')
     ax_proton.set_yscale('log')
     ax_proton.set_ylim([10 ** (-1), max(1e+2, np.max(df_proton['>=5 MeV']))])
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', category=UserWarning)
         ax_proton.set_xticklabels(ax_proton.get_xticklabels(), rotation=45)
-    ax_proton.set_ylabel('GOES Integral Proton Flux [proton cm$^\mathregular{-2}$ sr$^\mathregular{-1}$ s$^\mathregular{-1}$]')
+    ax_proton.set_ylabel('GOES Integral Proton Flux\n[proton cm$^\mathregular{-2}$ sr$^\mathregular{-1}$ s$^\mathregular{-1}$]')
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', category=UserWarning)
