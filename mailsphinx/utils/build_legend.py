@@ -8,8 +8,10 @@ import os
 def build_legend():
     fig, ax = plt.subplots(figsize=(config.image.width_legend, config.image.height_legend))
     handles = []
-    handles += build_legend_contingency()
+
     handles += build_legend_space_weather()
+    handles += build_legend_contingency()
+    handles += build_legend_event()
     ax.legend(handles=handles, loc='center', ncol=2, borderpad=0, borderaxespad=0, frameon=False)
     ax.axis('off')
     plt.tight_layout(pad=0.1)
@@ -24,8 +26,7 @@ def build_legend_contingency():
                       'Trigger/Input after Observed Phenomenon',
                       'No Matching Threshold',
                       'Ongoing SEP Event',
-                      'Unmatched',
-                      None
+                      #'Unmatched',
                      ]               
     legend_markers = []
     legend_colors = []
@@ -40,6 +41,10 @@ def build_legend_contingency():
 
 def build_legend_space_weather():
     legend_labels =  [
+                     'Long X-Ray Flux',
+                     'Short X-Ray Flux',
+                     '38-53 keV Electron Flux',
+                     '175-315 keV Electron Flux',
                      '$\geq$ 5 MeV Proton Flux',
                      '$\geq$ 10 MeV Proton Flux',
                      '$\geq$ 30 MeV Proton Flux',
@@ -47,15 +52,25 @@ def build_legend_space_weather():
                      '$\geq$ 60 MeV Proton Flux',
                      '$\geq$ 100 MeV Proton Flux',
                      '$\geq$ 500 MeV Proton Flux',
-                     'Long X-Ray Flux',
-                     'Short X-Ray Flux'
                       ]
     handles = [] 
     for label in legend_labels:
         if 'Proton' in label:
             key = '>=' + label.lstrip('$\geq$ ')
-        elif 'X-Ray' in label:
+        elif ('X-Ray' in label) or ('Electron' in label):
             key = label
         handles.append(matplotlib.lines.Line2D([0], [0], color=config.color.associations[key], lw=2, label=label))
     return handles
 
+def build_legend_event():
+    legend_labels = [
+                    '$\geq$ 10 MeV, $\geq$ 10 pfu Event',
+                    '$\geq$ 30 MeV, $\geq$ 1 pfu Event',
+                    '$\geq$ 50 MeV, $\geq$ 1 pfu Event',
+                    '$\geq$ 100 MeV, $\geq$ 1 pfu Event'
+                    ]
+    handles = [] 
+    for label in legend_labels:
+        key = label.replace('$\geq$ ', '>=')
+        handles.append(matplotlib.patches.Patch(color=config.color.associations[key], label=label))
+    return handles

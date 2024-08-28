@@ -50,7 +50,7 @@ def plot_contingency_table(df, save, title, start_datetime, end_datetime, events
         else:
             times = df_dict[key]['Prediction Window Start']
             ax.scatter(times, [config.index.contingency[key]] * len(times), color=config.color.associations[key], marker=config.shape.contingency, s=config.plot.marker_size, facecolor='none')
-        ax.text(count_position, config.index.contingency[key], len(df_dict[key]), fontsize=config.plot.fontsize, verticalalignment='center', color=config.color.associations[key])
+        ax.text(count_position, config.index.contingency[key], len(df_dict[key]), fontsize=config.plot.fontsize, verticalalignment='center', horizontalalignment='right', color=config.color.associations[key])
 
     for index, event in events.iterrows():
         ax.axvspan(event['Observed SEP Threshold Crossing Time'], event['Observed SEP End Time'], color=config.color.associations[event['Energy']], alpha=config.plot.opacity)

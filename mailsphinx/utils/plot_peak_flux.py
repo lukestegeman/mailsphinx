@@ -9,15 +9,18 @@ plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize
 
 def plot_predicted_peak_flux_vs_observed_peak_flux(title, df, save, min_peak, max_peak):
-    plt.figure(figsize=(config.image.peak_flux_width, config.image.peak_flux_height))
     color_counter = 0
     plot_exists = False
     for name, group in df.groupby('Model Category'):
-        if not filter_objects.is_column_empty(group, 'Predicted SEP Peak Intensity (Onset Peak)'):
-            plot_exists = True
-            plt.scatter(group['Observed SEP Peak Intensity (Onset Peak)'], group['Predicted SEP Peak Intensity (Onset Peak)'], label=name, s=config.plot.marker_size, color=config.color.color_cycle[color_counter])
-            color_counter += 1
-    if plot_exists:  
+        if (not filter_objects.is_column_empty(group, 'Predicted SEP Peak Intensity (Onset Peak)')) and (not filter_objects.is_column_empty(group, 'Observed SEP Peak Intensity (Onset Peak)')):
+            new_group = group[['Predicted SEP Peak Intensity (Onset Peak)', 'Observed SEP Peak Intensity (Onset Peak)']].dropna()
+            if (not plot_exists) and (not new_group.empty):
+                plt.figure(figsize=(config.image.peak_flux_width, config.image.peak_flux_height))
+                plot_exists = True
+            if (not new_group.empty):
+                plt.scatter(new_group['Observed SEP Peak Intensity (Onset Peak)'], new_group['Predicted SEP Peak Intensity (Onset Peak)'], label=name, s=config.plot.marker_size, color=config.color.color_cycle[color_counter])
+                color_counter += 1
+    if plot_exists:
         plt.plot([min_peak, max_peak], [min_peak, max_peak], color='black', linestyle='--')
         plt.grid()
         plt.title(title)

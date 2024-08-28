@@ -5,12 +5,7 @@ from ..utils import build_overview
 from ..utils import build_space_weather_summary
 from ..utils import config
 from ..utils import filter_objects
-from ..utils import format_objects
 from ..utils import manipulate_dates
-from ..utils import manipulate_keys
-from ..utils import plot_peak_flux
-from ..utils import plot_probability
-from ..utils import scoreboard_call
 from ..utils import tabulate_contingency_metrics
 
 import datetime
@@ -62,6 +57,10 @@ def build_text(is_historical=False, convert_images_to_base64=False, start_dateti
     weekly_forecasts = sphinx_df[weekly_condition]
     yearly_forecasts = sphinx_df[yearly_condition] 
 
+    # SORT BY ENERGY CHANNEL KEY
+    weekly_forecasts['Energy Channel Key'] = pd.Categorical(weekly_forecasts['Energy Channel Key'], categories=config.order.energy_key_order, ordered=True)
+    weekly_forecasts = weekly_forecasts.sort_values('Energy Channel Key')
+
     # WRITE HTML
     html = ''
     html += build_html.build_head_section()
@@ -70,8 +69,10 @@ def build_text(is_historical=False, convert_images_to_base64=False, start_dateti
     events, _ = build_event.get_unique_events(event_forecasts)
     if event:
         html += build_event.build_event_section(event_forecasts, week_end) 
-    html += build_space_weather_summary.build_space_weather_summary(is_historical, start_datetime=week_start, end_datetime=week_end, convert_image_to_base64=convert_images_to_base64)
 
+
+    html += tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, week_start, week_end)
+    html += build_space_weather_summary.build_space_weather_summary(is_historical, start_datetime=week_start, end_datetime=week_end, convert_image_to_base64=convert_images_to_base64)
     html += build_model.build_model_section(sphinx_df, weekly_forecasts, week_start, week_end, events, convert_images_to_base64) 
 
     return html
