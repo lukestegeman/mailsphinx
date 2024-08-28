@@ -15,6 +15,10 @@ import shutil
 import traceback
 import warnings
 
+pd.options.mode.chained_assignment = None
+
+
+
 def custom_warning_handler(message, category, filename, lineno, file=None, line=None):
     print('Warning: ', message)
     print('Category: ', category.__name__)
