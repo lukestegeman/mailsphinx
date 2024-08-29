@@ -64,8 +64,8 @@ def build_text(is_historical=False, convert_images_to_base64=False, start_dateti
         else:
             week_start, week_end = manipulate_dates.get_mailsphinx_boundaries(config.time.week_first_day, config.time.week_last_day)
         year_start = pd.to_datetime(datetime.datetime(day=1, month=1, year=week_start.year, hour=0, minute=0, second=0, microsecond=0), utc=True)
-        weekly_condition = (sphinx_df['Forecast Issue Time'] < week_end) * (sphinx_df['Forecast Issue Time'] >= week_start)
-        yearly_condition = (sphinx_df['Forecast Issue Time'] < week_end) * (sphinx_df['Forecast Issue Time'] >= year_start)
+        weekly_condition = (sphinx_df['Forecast Issue Time'] < week_end) & (sphinx_df['Forecast Issue Time'] >= week_start)
+        yearly_condition = (sphinx_df['Forecast Issue Time'] < week_end) & (sphinx_df['Forecast Issue Time'] >= year_start)
         first_forecast_datetime = sphinx_df['Forecast Issue Time'].min()
         weekly_forecasts = sphinx_df[weekly_condition]
         yearly_forecasts = sphinx_df[yearly_condition] 

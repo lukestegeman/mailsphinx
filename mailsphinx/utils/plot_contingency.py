@@ -42,16 +42,16 @@ def plot_contingency_table(df, save, title, start_datetime, end_datetime, events
     max_date = datetime.datetime.min
     count_position = end_datetime + pd.DateOffset(hours=12)
     for key, value in df_dict.items():
-
         if key == 'Not Evaluated':
             for all_clear_match_status, group in df_dict[key].groupby('All Clear Match Status'):
                 times = group['Prediction Window Start']
+                if all_clear_match_status == 'No Prediction Provided':
+                    print('NO PREDICTION PROVIDED HERE')
                 ax.scatter(times, [config.index.contingency[key]] * len(times), color=config.color.associations[key], marker=config.shape.associations[all_clear_match_status], s=config.plot.marker_size, facecolor='none')
         else:
             times = df_dict[key]['Prediction Window Start']
             ax.scatter(times, [config.index.contingency[key]] * len(times), color=config.color.associations[key], marker=config.shape.contingency, s=config.plot.marker_size, facecolor='none')
         ax.text(count_position, config.index.contingency[key], len(df_dict[key]), fontsize=config.plot.fontsize, verticalalignment='center', horizontalalignment='right', color=config.color.associations[key])
-
     for index, event in events.iterrows():
         ax.axvspan(event['Observed SEP Threshold Crossing Time'], event['Observed SEP End Time'], color=config.color.associations[event['Energy']], alpha=config.plot.opacity)
     ax.set_xlim([start_datetime, end_datetime])
@@ -59,7 +59,6 @@ def plot_contingency_table(df, save, title, start_datetime, end_datetime, events
     ax.set_yticklabels(reversed_categories)
     ax.set_ylim([-0.2, 4.2])
     ax.set_title(title)
-
     xticks = pd.date_range(start_datetime, end_datetime)
     ax.set_xticks(xticks)
     counter = 0
@@ -76,13 +75,10 @@ def plot_contingency_table(df, save, title, start_datetime, end_datetime, events
     fig.autofmt_xdate(rotation=0, ha='center')
     for tick in ax.get_xticks():
         ax.axvline(x=tick, color='gray', linewidth=0.5)
-
     yticks = ax.get_yticks()
     ytick_labels = ax.get_yticklabels()
     for i, tick_label in enumerate(ytick_labels):
         tick_label.set_color(config.color.associations[tick_label.get_text()])
-
-
     plt.tight_layout()
     #fig.patch.set_facecolor('red')
     plt.subplots_adjust(left=config.html.left_padding_fraction, right=0.9)

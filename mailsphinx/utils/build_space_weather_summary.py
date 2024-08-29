@@ -78,11 +78,10 @@ def download_ace_epam_flux(flux_type, historical=False, start_datetime=None, end
             df = pd.read_csv(io.StringIO(data))
             if flux_type == 'electron':
                 df.columns = ['time_tag', '38-53 keV', '175-315 keV', '47-68 keV (protons)', '115-195 keV (protons)', '310-580 keV (protons)', '795-1193 keV (protons)', '1060-1900 keV (protons)']
-            df['time_tag'] = pd.to_datetime(df['time_tag'])
         else:
             data = response.json()
             df = pd.DataFrame(data)
-            df['time_tag'] = pd.to_datetime(df['time_tag'])
+        df['time_tag'] = pd.to_datetime(df['time_tag'], format='%Y-%m-%dT%H:%M:%SZ', errors='coerce')
     else:
         print(f'Failed to retrieve data. HTTP Status code: {response.status_code}')
         print('Exiting...')
@@ -118,11 +117,10 @@ def download_goes_flux(flux_type, historical=False, start_datetime=None, end_dat
                 df.columns = ['time_tag', '>=1 MeV', '>=5 MeV', '>=10 MeV', '>=30 MeV', '>=50 MeV', '>=100 MeV', 'E>=0.8 MeV', 'E>=2 MeV', 'E>=4 MeV', '>=60 MeV', '>=500 MeV']
             elif flux_type == 'xray':
                 df.columns = ['time_tag', 'short', 'long']
-            df['time_tag'] = pd.to_datetime(df['time_tag'])
         else:
             data = response.json()
             df = pd.DataFrame(data)
-            df['time_tag'] = pd.to_datetime(df['time_tag'])
+        df['time_tag'] = pd.to_datetime(df['time_tag'], format='%Y-%m-%dT%H:%M:%SZ', errors='coerce')
     else:
         print(f'Failed to retrieve data. HTTP Status code: {response.status_code}')
         print('Exiting...')

@@ -14,7 +14,7 @@ import tarfile
 import calendar
 import pytz
 
-def main(do_send_email=False, historical=False, start_datetime=None, end_datetime=None, convert_images_to_base64=False, dataframe_filename=None):
+def main(do_send_email=False, historical=False, start_datetime=None, end_datetime=None, convert_images_to_base64=False, dataframe_filename=None, historical_mode_save_directory='historical'):
     """
     Main MailSPHINX function.
         Compiles HTML reports, 
@@ -52,7 +52,10 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
     
     # SAVE IN FILESYSTEM
     if historical:
-        savefile = os.path.join(config.path.email_storage, 'historical', 'mailsphinx_' + start_datetime.strftime('%Y-%m-%dT%H:%M:%S').replace(' ', '_').replace(':', '') + '_' + end_datetime.strftime('%Y-%m-%dT%H:%M:%S').replace(' ', '_').replace(':', '') + '.html')
+        save_directory = os.path.join(config.path.email_storage, historical_mode_save_directory)
+        if not os.path.exists(save_directory):
+            os.mkdir(save_directory)
+        savefile = os.path.join(save_directory, 'mailsphinx_' + start_datetime.strftime('%Y-%m-%dT%H:%M:%S').replace(' ', '_').replace(':', '') + '_' + end_datetime.strftime('%Y-%m-%dT%H:%M:%S').replace(' ', '_').replace(':', '') + '.html')
     else:
         savefile = os.path.join(config.path.email_storage, 'mailsphinx_' + config.time.generation_time.replace(' ', '_').replace(':', '') + '.html')
     html_webpage_text = format_objects.convert_cids_to_image_paths(html)
@@ -69,7 +72,7 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
             send_email.send_email('MailSPHINX: Weekly Report [test]', html, subscriber.email, send=do_send_email)
 
     
-def batch(directory, file_pattern_startswith=None):
+def batch(directory, file_pattern_startswith=None, historical_mode_save_directory='historical'):
     """
     Batch mode for generating many HTML files. Mainly for testing.
     
@@ -78,16 +81,19 @@ def batch(directory, file_pattern_startswith=None):
     directory : str
     """
     dataframe_path = './.tmp/SPHINX_dataframe.pkl'    
+    config.reset_all_time_df = True
+    if os.path.exists(config.path.all_time_statistics_overview):
+        os.remove(config.path.all_time_statistics_overview)
 
     # READ DIRECTORY
     zip_files = os.listdir(directory)
     
     if file_pattern_startswith is not None:
         zip_files = [file for file in zip_files if file.startswith(file_pattern_startswith)]
-
+    zip_files.sort()
+    
     if os.path.exists('./.tmp'):
         shutil.rmtree('./.tmp')
-
     os.mkdir('./.tmp')
     # LOOP THROUGH FILES
     for file in zip_files:
@@ -102,13 +108,14 @@ def batch(directory, file_pattern_startswith=None):
                     with open(dataframe_path, 'wb') as f:
                         f.write(extracted_file.read())
                     break
+        config.reset_all_time_df = False
 
         year = int(time_tag[:4])
         month = int(time_tag[4:])
         days_in_month = calendar.monthrange(year, month)[1]
         start_datetime = datetime.datetime(year=year, month=month, day=1).replace(tzinfo=pytz.UTC)
         end_datetime = datetime.datetime(year=year, month=month, day=days_in_month).replace(tzinfo=pytz.UTC)
-        main(do_send_email=False, historical=True, start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=True, dataframe_filename=dataframe_path)
+        main(do_send_email=False, historical=True, start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=True, dataframe_filename=dataframe_path, historical_mode_save_directory=historical_mode_save_directory)
 
 if __name__ == '__main__':
     None 
