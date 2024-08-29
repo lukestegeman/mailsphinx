@@ -64,5 +64,9 @@ def categorize_column(df, column_name, category_column_name, leftover_column_nam
     df : dataframe
     """
     # Apply the common substring extraction to the specified column
+    if df.empty:
+        df[category_column_name] = None
+        df[leftover_column_name] = None
+        return df
     df[[category_column_name, leftover_column_name]] = df[column_name].apply(lambda x : pd.Series(extract_common_substring(x)))
     return df

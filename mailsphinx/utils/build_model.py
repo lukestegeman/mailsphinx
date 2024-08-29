@@ -76,8 +76,10 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
     for name, group in weekly_df.groupby('Energy Channel Key'):
         if (not filter_objects.is_column_empty(group, 'Predicted SEP Peak Intensity (Onset Peak)')) and (not filter_objects.is_column_empty(group, 'Observed SEP Peak Intensity (Onset Peak)')):
             energy_channel_string = manipulate_keys.convert_energy_key_to_string(name)
-            text += plot_peak_flux.build_peak_flux_plot(energy_channel_string, group, os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg'), min_peak, max_peak, convert_image_to_base64=convert_images_to_base64)
-            counter += 1
+            plot_exists, plot_text = plot_peak_flux.build_peak_flux_plot(energy_channel_string, group, os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg'), min_peak, max_peak, convert_image_to_base64=convert_images_to_base64)
+            if plot_exists:
+                counter += 1
+                text += plot_text
 
     text += build_html.build_divider()
 

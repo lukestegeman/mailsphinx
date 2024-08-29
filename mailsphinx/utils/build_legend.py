@@ -26,6 +26,7 @@ def build_legend_contingency():
                       'Trigger/Input after Observed Phenomenon',
                       'No Matching Threshold',
                       'Ongoing SEP Event',
+                      'No Prediction Provided',
                       #'Unmatched',
                      ]               
     legend_markers = []

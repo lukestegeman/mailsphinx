@@ -98,6 +98,7 @@ class Color:
                              'No Matching Threshold' : '#000000',
                              'Ongoing SEP Event' : '#000000',
                              'Unmatched' : '#000000',
+                             'No Prediction Provided' : '#000000',
                              None: 'none'
                              }
         self.associations['&ge; 1'] = self.associations['>=1 MeV Proton Flux']
@@ -152,6 +153,7 @@ class Shape:
                              'No Matching Threshold' : '*', 
                              'Ongoing SEP Event' : '>',
                              'Unmatched' : '2',
+                             'No Prediction Provided' : '+',
                              None : 'None'}
         self.contingency = 'o'
 shape = Shape()

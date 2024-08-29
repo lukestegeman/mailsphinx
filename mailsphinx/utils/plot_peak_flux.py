@@ -34,8 +34,11 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(title, df, save, min_peak, ma
         plt.tight_layout()
         plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
         plt.close()
+    return plot_exists
 
 def build_peak_flux_plot(title, df, savefile, min_peak, max_peak, convert_image_to_base64=False):
-    plot_predicted_peak_flux_vs_observed_peak_flux(title, df, savefile, min_peak, max_peak)
-    text = build_html.build_image(savefile, write_as_base64=convert_image_to_base64)
-    return text
+    plot_exists = plot_predicted_peak_flux_vs_observed_peak_flux(title, df, savefile, min_peak, max_peak)
+    text = ''
+    if plot_exists:
+        text = build_html.build_image(savefile, write_as_base64=convert_image_to_base64)
+    return plot_exists, text

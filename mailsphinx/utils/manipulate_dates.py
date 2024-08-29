@@ -57,10 +57,10 @@ def get_mailsphinx_boundaries(start_weekday, end_weekday):
     now_weekday = now_gmt.weekday()
 
     # WHEN WAS THE MOST RECENT end_weekday?
-    end_datetime = pd.to_datetime(get_most_recent_weekday(now_gmt, end_weekday))
+    end_datetime = pd.to_datetime(get_most_recent_weekday(now_gmt, end_weekday), utc=True)
 
     # WHEN WAS THE start_weekday before that?
-    start_datetime = pd.to_datetime(get_weekday_before(now_gmt, start_weekday))
+    start_datetime = pd.to_datetime(get_weekday_before(now_gmt, start_weekday), utc=True)
 
     return start_datetime, end_datetime
 
@@ -79,7 +79,6 @@ def identify_datetime_columns(df):
 
 def convert_to_datetime(df, datetime_cols):
     for col in datetime_cols:
-        df[col] = pd.to_datetime(df[col], errors='coerce')
-        df[col] = df[col].dt.tz_localize('UTC')
+        df[col] = pd.to_datetime(df[col], errors='coerce', utc=True)
+        #df[col] = df[col].dt.tz_localize('UTC')
     return df
-

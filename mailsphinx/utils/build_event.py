@@ -9,6 +9,7 @@ import pandas as pd
 
 # BUILD EVENT SECTION
 def check_for_event(df, start_datetime, end_datetime):
+    df['Observed SEP Threshold Crossing Time'] = df['Observed SEP Threshold Crossing Time'].fillna(pd.NaT)
     event_forecasts = df[(df['Observed SEP All Clear'] == False) & (df['Observed SEP Threshold Crossing Time'] >= start_datetime) & (df['Observed SEP Threshold Crossing Time'] < end_datetime)]
     if len(event_forecasts) > 0:
         event = True
