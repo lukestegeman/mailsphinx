@@ -95,10 +95,13 @@ def batch(directory, file_pattern_startswith=None, historical_mode_save_director
     if os.path.exists('./.tmp'):
         shutil.rmtree('./.tmp')
     os.mkdir('./.tmp')
+    exit_early = False
     # LOOP THROUGH FILES
     for file in zip_files:
         print(file)
         time_tag = file.split('_')[-1].rstrip('.tgz')
+        if int(time_tag) < 202204:
+            continue
         # EXTRACT ONLY THE SPHINX DATAFRAME
         with tarfile.open(os.path.join(directory, file), 'r:gz') as tar:
             for member in tar.getmembers():
@@ -107,7 +110,9 @@ def batch(directory, file_pattern_startswith=None, historical_mode_save_director
                     extracted_file = tar.extractfile(member)
                     with open(dataframe_path, 'wb') as f:
                         f.write(extracted_file.read())
+                        exit_early = True
                     break
+        
         config.reset_all_time_df = False
 
         year = int(time_tag[:4])
@@ -116,6 +121,10 @@ def batch(directory, file_pattern_startswith=None, historical_mode_save_director
         start_datetime = datetime.datetime(year=year, month=month, day=1).replace(tzinfo=pytz.UTC)
         end_datetime = datetime.datetime(year=year, month=month, day=days_in_month).replace(tzinfo=pytz.UTC)
         main(do_send_email=False, historical=True, start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=True, dataframe_filename=dataframe_path, historical_mode_save_directory=historical_mode_save_directory)
+        
+        if exit_early:
+            print('Remove this line in mailsphinx/sphinx/sphinx.py when you would like to run in proper batch mode again.')
+            exit()
 
 if __name__ == '__main__':
     None 

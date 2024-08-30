@@ -2,6 +2,7 @@ from ..utils import build_html
 from ..utils import config
 from ..utils import filter_objects
 from ..utils import manipulate_keys
+from ..utils import plot_advanced_warning
 from ..utils import plot_contingency
 from ..utils import plot_peak_flux
 from ..utils import plot_probability
@@ -34,6 +35,24 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                         text += plot_contingency.build_contingency_plot(title, subsubgroup, os.path.join(config.path.email_image, 'contingency-' + str(counter) + '.jpg'), week_start, week_end, filtered_events, convert_image_to_base64=convert_images_to_base64)
                         counter += 1
 
+    # MAKE ADVANCED WARNING TIMELINES
+    if len(events) > 0:
+        counter = 0
+        text += build_html.build_paragraph_title('Advanced Warning Comparison')
+        for energy_key, energy_group in weekly_df.groupby('Energy Channel Key'):
+            energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key) 
+            if energy_group['Energy Channel Key'].eq(energy_key).any():
+                energy_reached = True
+                for threshold_key, group in energy_group.groupby('Threshold Key'):
+                    filtered_events = events[(events['Energy Channel Key'] == energy_key) & (events['Threshold Key'] == threshold_key)]
+                    for event_key, event_group in filtered_events.groupby('Observed SEP Threshold Crossing Time'):
+                        if energy_reached:
+                            text += build_html.build_paragraph_title(energy_channel_string, sublevel=1)
+                            energy_reached = False
+                        title = 'Event starting on ' + event_key.strftime('%Y-%m-%d %H:%M:%S')
+                        text += plot_advanced_warning.build_advanced_warning_plot(title, group, os.path.join(config.path.email_image, 'advanced-warning-' + str(counter) + '.jpg'), week_start, week_end, event_group, convert_image_to_base64=convert_images_to_base64)
+                        counter += 1
+
     # MAKE PROBABILITY TIMELINES WITH VERTICAL HISTOGRAMS
     text += build_html.build_paragraph_title('SEP Probability Timelines')
     counter = 0
@@ -59,10 +78,9 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                     counter += 1
 
     # MAKE PREDICTED PEAK FLUX VS. OBSERVED PEAK FLUX
-    text += build_html.build_paragraph_title('Predicted Peak Flux vs. Observed Peak Flux')
+
     counter = 0
-    
-    
+     
     # DETERMINE MIN/MAX VALUES
     predicted_peak = weekly_df['Predicted SEP Peak Intensity (Onset Peak)']
     observed_peak = weekly_df['Observed SEP Peak Intensity (Onset Peak)']
@@ -73,11 +91,16 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
     min_peak = min(min_predicted, min_observed)
     max_peak = max(max_predicted, max_observed)
 
+
+    at_least_one_plot = True
     for name, group in weekly_df.groupby('Energy Channel Key'):
         if (not filter_objects.is_column_empty(group, 'Predicted SEP Peak Intensity (Onset Peak)')) and (not filter_objects.is_column_empty(group, 'Observed SEP Peak Intensity (Onset Peak)')):
             energy_channel_string = manipulate_keys.convert_energy_key_to_string(name)
             plot_exists, plot_text = plot_peak_flux.build_peak_flux_plot(energy_channel_string, group, os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg'), min_peak, max_peak, convert_image_to_base64=convert_images_to_base64)
             if plot_exists:
+                if at_least_one_plot:
+                    at_least_one_plot = False
+                    text += build_html.build_paragraph_title('Predicted Peak Flux vs. Observed Peak Flux')
                 counter += 1
                 text += plot_text
 
