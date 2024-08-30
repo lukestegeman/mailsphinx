@@ -45,8 +45,6 @@ def plot_contingency_table(df, save, title, start_datetime, end_datetime, events
         if key == 'Not Evaluated':
             for all_clear_match_status, group in df_dict[key].groupby('All Clear Match Status'):
                 times = group['Prediction Window Start']
-                if all_clear_match_status == 'No Prediction Provided':
-                    print('NO PREDICTION PROVIDED HERE')
                 ax.scatter(times, [config.index.contingency[key]] * len(times), color=config.color.associations[key], marker=config.shape.associations[all_clear_match_status], s=config.plot.marker_size, facecolor='none')
         else:
             times = df_dict[key]['Prediction Window Start']
