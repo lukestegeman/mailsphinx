@@ -170,6 +170,8 @@ class Image:
         self.cid_dict_index = 0
         self.width_legend = 6
         self.height_legend = 3
+        self.advanced_warning_base_height = 1.0
+        self.vertical_category_allotment_advanced_warning = 0.25
 image = Image()
 
 class Index:

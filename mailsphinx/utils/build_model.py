@@ -78,9 +78,7 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                     counter += 1
 
     # MAKE PREDICTED PEAK FLUX VS. OBSERVED PEAK FLUX
-
     counter = 0
-     
     # DETERMINE MIN/MAX VALUES
     predicted_peak = weekly_df['Predicted SEP Peak Intensity (Onset Peak)']
     observed_peak = weekly_df['Observed SEP Peak Intensity (Onset Peak)']
@@ -90,8 +88,6 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
     max_observed = np.max(observed_peak)
     min_peak = min(min_predicted, min_observed)
     max_peak = max(max_predicted, max_observed)
-
-
     at_least_one_plot = True
     for name, group in weekly_df.groupby('Energy Channel Key'):
         if (not filter_objects.is_column_empty(group, 'Predicted SEP Peak Intensity (Onset Peak)')) and (not filter_objects.is_column_empty(group, 'Observed SEP Peak Intensity (Onset Peak)')):
@@ -103,7 +99,6 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                     text += build_html.build_paragraph_title('Predicted Peak Flux vs. Observed Peak Flux')
                 counter += 1
                 text += plot_text
-
     text += build_html.build_divider()
 
     return text
