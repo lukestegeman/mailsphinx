@@ -42,8 +42,8 @@ def build_text(is_historical=False, convert_images_to_base64=False, start_dateti
 
     warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
     if dataframe_filename is None:
-        dataframe_filename = os.path.join(config.path.dataframe, 'SPHINX_dataframe.csv')
-        print('WARNING: dataframe is ' + config.path.dataframe + os.sep + 'SPHINX_dataframe.csv')
+        dataframe_filename = os.path.join(config.path.dataframe, 'sample.pkl')
+        print('WARNING: dataframe is ' + os.path.join(config.path.dataframe, 'sample.pkl'))
     sphinx_df = pd.read_pickle(dataframe_filename)
 
     # CONVERT ALL DATAFRAME DATETIMES-LIKE STRINGS TO DATETIMES
