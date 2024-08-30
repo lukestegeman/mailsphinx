@@ -18,6 +18,7 @@ class Path:
         self.filesystem = os.path.abspath('./filesystem/public/viewable/')
         self.report = os.path.abspath(os.path.join(self.filesystem, 'report'))
         self.dataframe = os.path.abspath('./dataframes/')
+        self.example = os.path.abspath('./example/')
         self.email_header_template = os.path.abspath('./template/email_header.html')
         self.email_image = os.path.abspath('./email_images/')
         self.static_image = os.path.abspath('./static_images/')
