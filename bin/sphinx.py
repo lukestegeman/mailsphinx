@@ -14,12 +14,7 @@ parser.add_argument('-ed', '--end-datetime', type=str, default=None, help='Speci
 parser.add_argument('-b', '--batch', action='store_true', default=False, help='If True, runs in batch mode. Expects a --batch-directory argument.')
 parser.add_argument('-bd', '--batch-directory', type=str, default=None, help='Directory that contains many *.tgz files for MailSPHINX processing.')
 parser.add_argument('-bfp', '--batch-filename-pattern-startswith', type=str, default=None, help='Filters out files in batch_directory with names that do not match the provided starting pattern.')
-
 args = parser.parse_args()
-
-
-
-
 
 print("WARNING: If you are not on the NASA network, you will not be able to run MailSPHINX. Turn on VPN if you're offsite!")
 if args.batch:

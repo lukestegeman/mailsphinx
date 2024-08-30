@@ -5,11 +5,16 @@ This SPHINX code is not associated with sphinx-doc, the automated documentation 
 
 SPHINX is developed via community challenges through the SHINE, ISWAT, ESWW, and SEPVAL conferences and in support of the SEP Scoreboards.
 
-This tool isn't really for public consumption. No need to belabor the documentation.
-
-
 ## Run MailSPHINX
-The executable for mailsphinx is in the bin directory.
 
-## Subscribe to MailSPHINX
-[MailSPHINX Subscription Site](https://lukestegeman.github.io/mailsphinx/)
+
+
+
+
+
+
+
+
+
+
+The executable for mailsphinx is in the bin directory.
