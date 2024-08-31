@@ -27,16 +27,16 @@ From the `$mailsphinx` directory, execute `python bin/sphinx.py`. If your instal
 
 ### Command Line Options
 
-`-h, --help` : Shows a help message.
-`-sm, --send-email` : If active, attempts to send emails to subscribers listed in `$mailsphinx/no_share/subscribers.csv`.
-`-df, --dataframe-filename` : Specifies the SPHINX dataframe to be parsed by MailSPHINX.
-`-hm, --historical-mode` : If active, downloads historical GOES/ACE-EPAM data for evaluation period and filters dataframe to include only forecasts issued within selected period between `start_datetime` and `end_datetime`, inclusive.
-`-hmsd, --historical-mode-save-directory` : Directory to which historical MailSPHINX emails are saved. Default is `$mailsphinx/filesystem/public/viewable/historical`.
-`-sd, --start-datetime` : Specifies first day of evaluation period (YYYY-MM-DD). If `None`, defaults to UTC Monday prior to most recent UTC Monday. Time fixed at 00:00 UTC.
-`-ed, --end-datetime` : Specifies last day of the evaluation period (YYYY-MM-DD). If `None`, defaults to most recent UTC Monday (including today, if it is UTC Monday). Time fixed at 00:00 UTC.
-`-b, --batch` : If active, runs in batch mode, which will generate many MailSPHINX HTML files. Does not allow for email distribution. Expects a --batch-directory argument.
-`-bd, --batch-directory` : Directory that contains many `*.tgz` files for MailSPHINX processing.
-`-bfp, --batch-filename-pattern-startswith` : Filters out files in `batch_directory` with names that do not match the provided starting pattern.
+    `-h, --help` : Shows a help message.
+    `-sm, --send-email` : If active, attempts to send emails to subscribers listed in `$mailsphinx/no_share/subscribers.csv`.
+    `-df, --dataframe-filename` : Specifies the SPHINX dataframe to be parsed by MailSPHINX.
+    `-hm, --historical-mode` : If active, downloads historical GOES/ACE-EPAM data for evaluation period and filters dataframe to include only forecasts issued within selected period between `start_datetime` and `end_datetime`, inclusive.
+    `-hmsd, --historical-mode-save-directory` : Directory to which historical MailSPHINX emails are saved. Default is `$mailsphinx/filesystem/public/viewable/historical`.
+    `-sd, --start-datetime` : Specifies first day of evaluation period (YYYY-MM-DD). If `None`, defaults to UTC Monday prior to most recent UTC Monday. Time fixed at 00:00 UTC.
+    `-ed, --end-datetime` : Specifies last day of the evaluation period (YYYY-MM-DD). If `None`, defaults to most recent UTC Monday (including today, if it is UTC Monday). Time fixed at 00:00 UTC.
+    `-b, --batch` : If active, runs in batch mode, which will generate many MailSPHINX HTML files. Does not allow for email distribution. Expects a --batch-directory argument.
+    `-bd, --batch-directory` : Directory that contains many `*.tgz` files for MailSPHINX processing.
+    `-bfp, --batch-filename-pattern-startswith` : Filters out files in `batch_directory` with names that do not match the provided starting pattern.
 
 ### Configuration Settings
 
