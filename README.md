@@ -12,9 +12,11 @@ SPHINX is developed via community challenges through the SHINE, ISWAT, ESWW, and
 ## Installation
 
 Download MailSPHINX from Github to your desired location (for convenience, assume `$mailsphinx` represents this location on your machine):
+
     `git clone https://github.com/lukestegeman/mailsphinx.git`
 
 Install the required Python dependencies via `pip` (consider using a [virtual environment](https://docs.python.org/3/library/venv.html)):
+
     `pip install -r requirements.txt`
 
 If you are working on a Windows machine, you must add the `$mailsphinx` directory to your `PYTHONPATH` environment variable. There are several equivalent methods to edit your `PYTHONPATH`. They are linked [here](https://www.tutorialspoint.com/how-to-set-python-environment-variable-pythonpath-on-windows).
@@ -66,10 +68,11 @@ Most importantly, the user is able to modify paths to important locations for re
     `Path.index_template_stylesheet` : Template CSS stylesheet file for MailSPHINX Archive.
     `Path.all_time_statistics_overview` : Data file that contains all-time forecast statistics since last reset.
 
+    **`Path.dataframe` : Data file that contains SPHINX dataframe.**
     **`Path.external_report_location` : Directory where SPHINX-generated validation reports are stored; this path is used for their retrieval and inclusion into the MailSPHINX Archive.**
     **`Path.subscriber_data` : Data file that contains a list of email addresses for those who have subscribed to MailSPHINX.**
 
-The three paths in **bold** will need to be modified by the user. 
+The three paths in **bold** may need to be modified by the user. 
 
 ### Specifying `Path.dataframe`
 
