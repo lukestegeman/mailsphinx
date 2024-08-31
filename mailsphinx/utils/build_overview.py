@@ -109,8 +109,6 @@ def build_overview_section(sphinx_df, week_start, week_end, year_start, first_fo
     # WRITE HTML TABLE FROM LIST OF LISTS
     table_data = []
     dataframe_segments = [weekly_forecasts, yearly_forecasts]
-    print(weekly_forecasts)
-    print(yearly_forecasts)
     start_segments = [week_start, year_start]
     texts = ['This Week: ', 'This Year: ']
     dfs = []
@@ -118,13 +116,12 @@ def build_overview_section(sphinx_df, week_start, week_end, year_start, first_fo
         row, df = build_overview_table_row(df, start, text)
         table_data.append(row)
         dfs.append(df)
-    print('--------') 
  
     # ALL-TIME ROW
     if not config.reset_all_time_df:
+        dfs[-1]['time_period'].iloc[0] = dfs[-1]['time_period'].iloc[0].replace('This Year:', '')
         if os.path.exists(config.path.all_time_statistics_overview):
             df_all_time = load_all_time_statistics()
-            print(df_all_time)
             time_period_all_time = df_all_time['time_period'].iloc[0].lstrip('This Year: ')
             df_all_time = df_all_time.loc[:, df_all_time.columns != 'time_period'] + dfs[0].loc[:, dfs[0].columns != 'time_period']
             df_all_time['time_period'] = [time_period_all_time]
