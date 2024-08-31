@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MailSPHINX Archive</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>MailSPHINX Archive</header>
+${directory-structure}$
+    <script>
+        var collapsibles = document.getElementsByClassName('collapsible');
+        for (var i = 0; i < collapsibles.length; i++) {
+            collapsibles[i].addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+        }
+    </script>
+</body>
+</html>
+
+

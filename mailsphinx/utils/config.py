@@ -15,17 +15,23 @@ email = Email()
 
 class Path:
     def __init__(self):
-        self.filesystem = os.path.abspath('./filesystem/public/viewable/')
+        self.filesystem = os.path.abspath(os.path.join('filesystem', 'public', 'viewable'))
         self.report = os.path.abspath(os.path.join(self.filesystem, 'report'))
-        self.dataframe = os.path.abspath('./dataframes/')
-        self.email_header_template = os.path.abspath('./template/email_header.html')
-        self.email_image = os.path.abspath('./email_images/')
-        self.static_image = os.path.abspath('./static_images/')
-        self.all_time_statistics_overview = os.path.abspath(os.path.join(self.filesystem, 'other', 'all_time_statistics_overview.pkl'))
-        self.external_report_location = os.path.abspath('./external_datapath/202401/reports/')
-        self.external_dataframe_location = os.path.abspath('./external_datapath/202401/output/SPHINX_dataframe.csv')
+        self.other = os.path.abspath(os.path.join(self.filesystem, 'other'))
+        self.all_time_statistics_overview = os.path.abspath(os.path.join(self.other, 'all_time_statistics_overview.pkl'))
         self.email_storage = os.path.abspath(os.path.join(self.filesystem, 'email'))
-        self.subscriber_data = os.path.abspath('./no_share/subscribers.csv')
+        self.index = os.path.abspath(os.path.join(self.filesystem, 'index.html'))
+        self.index_stylesheet = os.path.abspath(os.path.join(self.filesystem, 'styles.css'))
+        self.example = os.path.abspath('example')
+        self.template = os.path.abspath('template')
+        self.email_image = os.path.abspath('email_images')
+        self.email_header_template = os.path.abspath(os.path.join(self.template, 'email_header.html'))
+        self.index_template = os.path.abspath(os.path.join(self.template, 'index_header.html'))
+        self.index_template_stylesheet = os.path.abspath(os.path.join(self.template, 'styles.css'))
+        # MOST LIKELY TO REQUIRE USER INTERVENTION
+        self.dataframe = os.path.abspath(os.path.join(self.example, 'dataframe.pkl'))
+        self.external_report_location = os.path.abspath(os.path.join(self.example, 'reports'))
+        self.subscriber_data = os.path.abspath(os.path.join('no_share', 'subscribers.csv'))
 path = Path()
 
 class Time:

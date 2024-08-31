@@ -16,10 +16,10 @@ plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize 
 
 def build_space_weather_summary(historical=False, start_datetime=None, end_datetime=None, convert_image_to_base64=False):
-    goes_proton_df = download_flux(flux_type='proton', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
-    goes_xray_df = download_flux(flux_type='xray', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
-    ace_electron_df = download_flux(flux_type='electron', historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
-    plot_flux(goes_xray_df, goes_proton_df, ace_electron_df, historical=historical)
+    goes_proton_df = download_flux(flux_type='proton', start_datetime=start_datetime, end_datetime=end_datetime)
+    goes_xray_df = download_flux(flux_type='xray', start_datetime=start_datetime, end_datetime=end_datetime)
+    ace_electron_df = download_flux(flux_type='electron', start_datetime=start_datetime, end_datetime=end_datetime)
+    plot_flux(goes_xray_df, goes_proton_df, ace_electron_df)
     text = build_html.build_section_title('Space Weather Summary')
     # MAKE LEGEND
     build_legend.build_legend()
@@ -52,35 +52,22 @@ def rerequest(url, tries=0):
 
 def download_flux(flux_type, historical=False, start_datetime=None, end_datetime=None):
     if flux_type == 'proton' or flux_type == 'xray':
-        df = download_goes_flux(flux_type, historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
+        df = download_goes_flux(flux_type, start_datetime=start_datetime, end_datetime=end_datetime)
     elif flux_type == 'electron':
-        df = download_ace_epam_flux(flux_type, historical=historical, start_datetime=start_datetime, end_datetime=end_datetime)
+        df = download_ace_epam_flux(start_datetime, end_datetime)
     return df
 
-def download_ace_epam_flux(flux_type, historical=False, start_datetime=None, end_datetime=None): 
-    if historical:
-        assert(start_datetime is not None), 'start_datetime cannot be None in historical mode.'
-        assert(end_datetime is not None), 'end_datetime cannot be None in historical mode.'
-        if end_datetime < config.time.iswa_minimum_time:
-            print('WARNING: ISWA does not carry data prior to 2010-04-14T00:00:00Z. Expect empty plots.')
-        base_url = 'https://iswa.gsfc.nasa.gov/IswaSystemWebApp/hapi/data?'
-        if flux_type == 'electron':
-            flux_type_url = 'id=ace_epam_P5M'
-        url = base_url + flux_type_url + '&time.min=' + start_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&time.max=' + end_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&format=csv'
-    else:
-        # REAL TIME
-        print('SET UP REAL TIME ELECTRON FLUX')
-        exit()
+def download_ace_epam_flux(start_datetime, end_datetime):
+    if end_datetime < config.time.iswa_minimum_time:
+        print('WARNING: ISWA does not carry data prior to 2010-04-14T00:00:00Z. Expect empty plots.')
+    base_url = 'https://iswa.gsfc.nasa.gov/IswaSystemWebApp/hapi/data?'
+    flux_type_url = 'id=ace_epam_P5M'
+    url = base_url + flux_type_url + '&time.min=' + start_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&time.max=' + end_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&format=csv'
     response = rerequest(url) 
     if response.status_code == 200:
-        if historical:
-            data = response.text
-            df = pd.read_csv(io.StringIO(data))
-            if flux_type == 'electron':
-                df.columns = ['time_tag', '38-53 keV', '175-315 keV', '47-68 keV (protons)', '115-195 keV (protons)', '310-580 keV (protons)', '795-1193 keV (protons)', '1060-1900 keV (protons)']
-        else:
-            data = response.json()
-            df = pd.DataFrame(data)
+        data = response.text
+        df = pd.read_csv(io.StringIO(data))
+        df.columns = ['time_tag', '38-53 keV', '175-315 keV', '47-68 keV (protons)', '115-195 keV (protons)', '310-580 keV (protons)', '795-1193 keV (protons)', '1060-1900 keV (protons)']
         df['time_tag'] = pd.to_datetime(df['time_tag'], format='%Y-%m-%dT%H:%M:%SZ', errors='coerce')
     else:
         print(f'Failed to retrieve data. HTTP Status code: {response.status_code}')
@@ -88,38 +75,23 @@ def download_ace_epam_flux(flux_type, historical=False, start_datetime=None, end
         exit()
     return df
 
-def download_goes_flux(flux_type, historical=False, start_datetime=None, end_datetime=None): 
-    if historical:
-        assert(start_datetime is not None), 'start_datetime cannot be None in historical mode.'
-        assert(end_datetime is not None), 'end_datetime cannot be None in historical mode.'
-        if end_datetime < config.time.iswa_minimum_time:
-            print('WARNING: ISWA does not carry data prior to 2010-04-14T00:00:00Z. Expect empty plots.')
-        base_url = 'https://iswa.gsfc.nasa.gov/IswaSystemWebApp/hapi/data?'
+def download_goes_flux(flux_type, start_datetime, end_datetime): 
+    if end_datetime < config.time.iswa_minimum_time:
+        print('WARNING: ISWA does not carry data prior to 2010-04-14T00:00:00Z. Expect empty plots.')
+    base_url = 'https://iswa.gsfc.nasa.gov/IswaSystemWebApp/hapi/data?'
+    if flux_type == 'proton':
+        flux_type_url = 'id=goesp_part_flux_P5M'
+    elif flux_type == 'xray':
+        flux_type_url = 'id=goesp_xray_flux_P1M'
+    url = base_url + flux_type_url + '&time.min=' + start_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&time.max=' + end_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&format=csv'
+    response = rerequest(url) 
+    if response.status_code == 200:
+        data = response.text
+        df = pd.read_csv(io.StringIO(data))
         if flux_type == 'proton':
-            flux_type_url = 'id=goesp_part_flux_P5M'
+            df.columns = ['time_tag', '>=1 MeV', '>=5 MeV', '>=10 MeV', '>=30 MeV', '>=50 MeV', '>=100 MeV', 'E>=0.8 MeV', 'E>=2 MeV', 'E>=4 MeV', '>=60 MeV', '>=500 MeV']
         elif flux_type == 'xray':
-            flux_type_url = 'id=goesp_xray_flux_P1M'
-        url = base_url + flux_type_url + '&time.min=' + start_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&time.max=' + end_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '&format=csv'
-    else:
-        # REAL TIME
-        if flux_type == 'proton':
-            url = 'https://services.swpc.noaa.gov/json/goes/primary/integral-protons-7-day.json' 
-            #url = 'https://services.swpc.noaa.gov/json/goes/secondary/integral-protons-7-day.json'
-        elif flux_type == 'xray':    
-            url = 'https://services.swpc.noaa.gov/json/goes/primary/xrays-7-day.json'
-            #url = 'https://services.swpc.noaa.gov/json/goes/secondary/xrays-7-day.json'
-    response = rerequest(url) 
-    if response.status_code == 200:
-        if historical:
-            data = response.text
-            df = pd.read_csv(io.StringIO(data))
-            if flux_type == 'proton':
-                df.columns = ['time_tag', '>=1 MeV', '>=5 MeV', '>=10 MeV', '>=30 MeV', '>=50 MeV', '>=100 MeV', 'E>=0.8 MeV', 'E>=2 MeV', 'E>=4 MeV', '>=60 MeV', '>=500 MeV']
-            elif flux_type == 'xray':
-                df.columns = ['time_tag', 'short', 'long']
-        else:
-            data = response.json()
-            df = pd.DataFrame(data)
+            df.columns = ['time_tag', 'short', 'long']
         df['time_tag'] = pd.to_datetime(df['time_tag'], format='%Y-%m-%dT%H:%M:%SZ', errors='coerce')
     else:
         print(f'Failed to retrieve data. HTTP Status code: {response.status_code}')
@@ -127,7 +99,7 @@ def download_goes_flux(flux_type, historical=False, start_datetime=None, end_dat
         exit()
     return df
 
-def plot_flux(df_xray, df_proton, df_electron, historical=False): 
+def plot_flux(df_xray, df_proton, df_electron): 
 
     fig, (ax_xray, ax_electron, ax_proton) = plt.subplots(3, 1, sharex=True, figsize=(config.image.width, config.image.height * 2.5), gridspec_kw={'height_ratios' : [2, 1, 2], 'hspace' : 0.1} )
     t_low_xray = np.min(df_xray['time_tag'])
@@ -139,43 +111,9 @@ def plot_flux(df_xray, df_proton, df_electron, historical=False):
     t_low = manipulate_dates.round_to_nearest_day(min(min(t_low_xray, t_low_proton), t_low_electron))
     t_high = manipulate_dates.round_to_nearest_day(max(max(t_high_xray, t_high_proton), t_high_electron))
 
-    if historical:
-        df_xray['time_tag_long'] = df_xray['time_tag_short'] = df_xray['time_tag']
-        df_proton['time_tag_1'] = df_proton['time_tag_5'] = df_proton['time_tag_10'] = df_proton['time_tag_30'] = df_proton['time_tag_50'] = df_proton['time_tag_60'] = df_proton['time_tag_100'] = df_proton['time_tag_500'] = df_proton['time_tag']
-        df_electron['time_tag_1'] = df_electron['time_tag_2'] = df_electron['time_tag']
-    else:
-        long_condition = df_xray['energy'] == '0.1-0.8nm'
-        short_condition = df_xray['energy'] == '0.05-0.4nm'
-        df_xray['time_tag_long'] = df_xray[long_condition]['time_tag']
-        df_xray['time_tag_short'] = df_xray[short_condition]['time_tag']
-        df_xray['long'] = df_xray[long_condition]['flux']
-        df_xray['short'] = df_xray[short_condition]['flux']
-        p1_condition = df_proton['energy'] == '>=1 MeV' 
-        p5_condition = df_proton['energy'] == '>=5 MeV'
-        p10_condition = df_proton['energy'] == '>=10 MeV'
-        p30_condition = df_proton['energy'] == '>=30 MeV'
-        p50_condition = df_proton['energy'] == '>=50 MeV'
-        p60_condition = df_proton['energy'] == '>=60 MeV'
-        p100_condition = df_proton['energy'] == '>=100 MeV'
-        p500_condition = df_proton['energy'] == '>=500 MeV'
-        df_proton['time_tag_1'] = df_proton[p1_condition] 
-        df_proton['time_tag_5'] = df_proton[p5_condition]
-        df_proton['time_tag_10'] = df_proton[p10_condition]
-        df_proton['time_tag_30'] = df_proton[p30_condition]
-        df_proton['time_tag_50'] = df_proton[p50_condition]
-        df_proton['time_tag_60'] = df_proton[p60_condition]
-        df_proton['time_tag_100'] = df_proton[p100_condition] 
-        df_proton['time_tag_500'] = df_proton[p100_condition] 
-        df_proton['>=1 MeV'] = df_proton[p1_condition]['flux']
-        df_proton['>=5 MeV'] = df_proton[p5_condition]['flux']
-        df_proton['>=10 MeV'] = df_proton[p10_condition]['flux']
-        df_proton['>=30 MeV'] = df_proton[p30_condition]['flux']
-        df_proton['>=50 MeV'] = df_proton[p50_condition]['flux']
-        df_proton['>=60 MeV'] = df_proton[p60_condition]['flux']
-        df_proton['>=100 MeV'] = df_proton[p100_condition]['flux']
-        df_proton['>=500 MeV'] = df_proton[p100_condition]['flux']
-        print('SET UP REAL TIME ELECTRON FLUX')
-        exit()
+    df_xray['time_tag_long'] = df_xray['time_tag_short'] = df_xray['time_tag']
+    df_proton['time_tag_1'] = df_proton['time_tag_5'] = df_proton['time_tag_10'] = df_proton['time_tag_30'] = df_proton['time_tag_50'] = df_proton['time_tag_60'] = df_proton['time_tag_100'] = df_proton['time_tag_500'] = df_proton['time_tag']
+    df_electron['time_tag_1'] = df_electron['time_tag_2'] = df_electron['time_tag']
 
     ax_xray.plot(df_xray['time_tag_long'], df_xray['long'], label='Long', color=config.color.associations['Long X-Ray Flux'])
     ax_xray.plot(df_xray['time_tag_short'], df_xray['short'], label='Short', color=config.color.associations['Short X-Ray Flux'])

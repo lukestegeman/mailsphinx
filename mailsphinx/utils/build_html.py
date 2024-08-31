@@ -115,6 +115,7 @@ def build_head_section():
     a.close()
     config.time.generation_time = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0).strftime('%Y-%m-%d %H:%M')
     text = text.replace('${generation_time}$', 'Report Generation Time: ' + config.time.generation_time + ' (all UTC)')
+    text = text.replace('${mailsphinx_archive}$', config.path.index)
     for key, value in config.html.template_variables.items():
         text = text.replace('${' + key + '}$', value)
     return text

@@ -1,0 +1,56 @@
+/* styles.css */
+
+/* Body and general layout */
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    margin: 0;
+    background-color: #f0f0f0;
+	padding-top: 70px;
+}
+
+ header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #e6982b;
+			color: #ffffff;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 1000; /* Ensures the header stays on top */
+            border-bottom: 1px solid #ccc;
+        }
+
+h1 {
+    display: block; /* Ensure block-level behavior */
+    margin-bottom: 10px; /* Add space after the heading */
+}
+
+
+ul {
+	list-style-type: none;
+}
+
+.collapsible::before {
+	content: '►'; /* Right arrow */
+	padding-right: 6px;
+}
+
+.collapsible.active::before {
+	content: '▼'; /* Down arrow */
+}
+
+.nested {
+	display: none;
+	margin-left: 20px;
+}
+
+.active + .nested {
+	display: block;
+}
+
+.collapsible {
+	cursor: pointer;
+}

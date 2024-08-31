@@ -4,6 +4,7 @@ from ..utils import subscription
 from ..utils import build_text
 from ..utils import config
 from ..utils import format_objects
+from ..utils import setup_directory_structure
 
 # External modules (included with Python)
 import datetime
@@ -31,13 +32,18 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
 
     end_datetime : NoneType, datetime 
     """
+    
+    # DEFAULT TO CONFIG-SPECIFIED DATAFRAME
+    if dataframe_filename is None:
+        dataframe_filename = config.path.dataframe
+        print('SPHINX dataframe is ', config.path.dataframe)
 
     # RESET IMAGES
     if os.path.exists(config.path.email_image):
-        print('deleting...')
         shutil.rmtree(config.path.email_image)
-    if not os.path.exists(config.path.email_image):
-        os.mkdir(config.path.email_image)
+
+    # SETUP DIRECTORIES
+    setup_directory_structure.make_directories()
 
     # COLLECT HTML REPORTS AND STORE IN FILESYSTEM
     html_files = glob.glob(os.path.join(config.path.external_report_location, '*.html'))
@@ -59,10 +65,12 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
     else:
         savefile = os.path.join(config.path.email_storage, 'mailsphinx_' + config.time.generation_time.replace(' ', '_').replace(':', '') + '.html')
     html_webpage_text = format_objects.convert_cids_to_image_paths(html)
-
     a = open(savefile, 'w')
     a.write(html_webpage_text)
     a.close()
+
+    # MAKE index.html
+    setup_directory_structure.make_index_html()
 
     # SEND EMAIL TO ALL RECIPIENTS
     if do_send_email:
