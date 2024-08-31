@@ -41,14 +41,9 @@ def build_text(is_historical=False, convert_images_to_base64=False, start_dateti
     #warnings.showwarning = custom_warning_handler 
 
     warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
-    if dataframe_filename is None:
-        dataframe_filename = os.path.join(config.path.example, 'dataframe.pkl')
-        print('WARNING: dataframe is ' + os.path.join(config.path.example, 'dataframe.pkl'))
     sphinx_df = pd.read_pickle(dataframe_filename)
 
     # CONVERT ALL DATAFRAME DATETIMES-LIKE STRINGS TO DATETIMES
-    #datetime_columns = manipulate_dates.identify_datetime_columns(sphinx_df)
-    #sphinx_df = manipulate_dates.convert_to_datetime(sphinx_df, datetime_columns)
     for col in sphinx_df.select_dtypes(include=['datetime64[ns]']):
         sphinx_df[col] = sphinx_df[col].dt.tz_localize('UTC')
     sphinx_df = filter_objects.categorize_column(sphinx_df, 'Model', 'Model Category', 'Model Flavor')

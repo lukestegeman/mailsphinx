@@ -32,6 +32,11 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
 
     end_datetime : NoneType, datetime 
     """
+    
+    # DEFAULT TO CONFIG-SPECIFIED DATAFRAME
+    if dataframe_filename is None:
+        dataframe_filename = config.path.dataframe
+        print('SPHINX dataframe is ', config.path.dataframe)
 
     # RESET IMAGES
     if os.path.exists(config.path.email_image):
