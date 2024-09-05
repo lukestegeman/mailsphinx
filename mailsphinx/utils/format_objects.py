@@ -13,6 +13,8 @@ def format_data(value):
         return str(value)
     elif type(value) == str:
         return value
+    elif value is None:
+        return 'N/A'
     elif np.isnan(value):
         return 'N/A'
     else:

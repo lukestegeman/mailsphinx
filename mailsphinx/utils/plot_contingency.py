@@ -40,7 +40,9 @@ def plot_contingency_table(df, save, title, start_datetime, end_datetime, events
     reversed_categories = list(reversed(list(config.index.contingency.keys())))
     fig, ax = plt.subplots(figsize=(config.image.width, config.image.height_contingency))
     max_date = datetime.datetime.min
-    count_position = end_datetime + pd.DateOffset(hours=12)
+    xmin, xmax = ax.get_xlim()
+    offset_days = (end_datetime - start_datetime).days / 14
+    count_position = end_datetime + pd.DateOffset(days=offset_days)
     for key, value in df_dict.items():
         if key == 'Not Evaluated':
             for all_clear_match_status, group in df_dict[key].groupby('All Clear Match Status'):
@@ -82,11 +84,3 @@ def plot_contingency_table(df, save, title, start_datetime, end_datetime, events
     plt.subplots_adjust(left=config.html.left_padding_fraction, right=0.9)
     plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
     plt.close()
-
-    
-
-
-    
-        
-    
-    

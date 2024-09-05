@@ -140,9 +140,7 @@ class Color:
                             '#8c564b',  # Brown
                             '#e377c2',  # Pink
                            ]
-
         self.legend_background = '#ffffff'
-
 color = Color()
 
 class Shape:
@@ -307,7 +305,6 @@ class Order:
                                  'min.500.0.max.-1.0.units.MeV'
                                 ]
 order = Order()
-
 
 # CAREFUL WITH THESE
 reset_all_time_df = False

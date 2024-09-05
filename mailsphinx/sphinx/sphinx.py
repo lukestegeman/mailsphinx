@@ -15,7 +15,7 @@ import tarfile
 import calendar
 import pytz
 
-def main(do_send_email=False, historical=False, start_datetime=None, end_datetime=None, convert_images_to_base64=False, dataframe_filename=None, historical_mode_save_directory='historical'):
+def main(do_send_email=False, historical=False, start_datetime=None, end_datetime=None, convert_images_to_base64=False, dataframe_filename=None, historical_mode_save_directory='historical', external_report_location=None):
     """
     Main MailSPHINX function.
         Compiles HTML reports, 
@@ -46,7 +46,10 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
     setup_directory_structure.make_directories()
 
     # COLLECT HTML REPORTS AND STORE IN FILESYSTEM
-    html_files = glob.glob(os.path.join(config.path.external_report_location, '*.html'))
+    if external_report_location is None:
+        external_report_location = config.path.external_report_location
+    path = os.path.join(external_report_location, '*.html')
+    html_files = glob.glob(path)
     for f in html_files:
         shutil.copy(f, os.path.join(config.path.report, os.path.basename(f))) 
 
@@ -103,24 +106,27 @@ def batch(directory, file_pattern_startswith=None, historical_mode_save_director
     if os.path.exists('./.tmp'):
         shutil.rmtree('./.tmp')
     os.mkdir('./.tmp')
-    exit_early = False
+    os.mkdir('./.tmp/reports')
     # LOOP THROUGH FILES
     for file in zip_files:
-        print(file)
         time_tag = file.split('_')[-1].rstrip('.tgz')
-        if int(time_tag) < 202204:
-            continue
+        tarfile_path = os.path.join(time_tag, 'output', 'pkl', 'SPHINX_dataframe.pkl')
+        tarfile_report_path = os.path.join(time_tag, 'reports')
         # EXTRACT ONLY THE SPHINX DATAFRAME
         with tarfile.open(os.path.join(directory, file), 'r:gz') as tar:
             for member in tar.getmembers():
-                tarfile_path = os.path.join(time_tag, 'output', 'pkl', 'SPHINX_dataframe.pkl')
                 if member.name.replace('/', '\\') == tarfile_path:
                     extracted_file = tar.extractfile(member)
                     with open(dataframe_path, 'wb') as f:
                         f.write(extracted_file.read())
-                        exit_early = True
                     break
-        
+        with tarfile.open(os.path.join(directory, file), 'r:gz') as tar:
+            report_directory = []
+            for member in tar.getmembers():
+                if member.name.replace('/', '\\').startswith(tarfile_report_path) and member.isfile():
+                    member.name = os.path.basename(member.name)
+                    tar.extract(member, path='./.tmp/reports/')
+            
         config.reset_all_time_df = False
 
         year = int(time_tag[:4])
@@ -128,12 +134,8 @@ def batch(directory, file_pattern_startswith=None, historical_mode_save_director
         days_in_month = calendar.monthrange(year, month)[1]
         start_datetime = datetime.datetime(year=year, month=month, day=1).replace(tzinfo=pytz.UTC)
         end_datetime = datetime.datetime(year=year, month=month, day=days_in_month).replace(tzinfo=pytz.UTC)
-        main(do_send_email=False, historical=True, start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=True, dataframe_filename=dataframe_path, historical_mode_save_directory=historical_mode_save_directory)
+        main(do_send_email=False, historical=True, start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=True, dataframe_filename=dataframe_path, historical_mode_save_directory=historical_mode_save_directory, external_report_location='./.tmp/reports/')
         
-        if exit_early:
-            print('Remove this line in mailsphinx/sphinx/sphinx.py when you would like to run in proper batch mode again.')
-            exit()
-
 if __name__ == '__main__':
     None 
 

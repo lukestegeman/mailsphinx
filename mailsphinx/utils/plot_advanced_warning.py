@@ -22,7 +22,7 @@ def plot_advanced_warning(df, save, title, start_datetime, end_datetime, event):
     ax.set_title(title)
     for model_category, group in df.groupby('Model Category'):
         for model_flavor, subgroup in group.groupby('Model Flavor'):
-            hit_condition = (subgroup['Predicted SEP All Clear'] == False) & (subgroup['Observed SEP All Clear'] == False)
+            hit_condition = (subgroup['Predicted SEP All Clear'] == False) & (subgroup['Observed SEP All Clear'] == False) & (subgroup['Observed SEP Threshold Crossing Time'] == sep_onset)
             advanced_warning_times = sep_onset_hour - (subgroup[hit_condition]['Forecast Issue Time'].dropna() - unix_epoch) / pd.Timedelta(hours=1)
             model = model_category + ' ' + model_flavor
             ax.scatter(-advanced_warning_times, [model] * len(advanced_warning_times), color=config.color.associations['Hits'], marker=config.shape.contingency, s=config.plot.marker_size, facecolor='none')
@@ -30,15 +30,21 @@ def plot_advanced_warning(df, save, title, start_datetime, end_datetime, event):
     ax.set_xlabel('Advanced Warning Time [hours]')
 
     labels = ax.get_xticklabels()
-    reversed_labels = [str(-int(label.get_text().replace('\u2212', '-'))).replace('-', '\u2212') for label in labels]
+    reversed_labels = []
+    for label in labels:
+        value = float(label.get_text().replace('\u2212', '-'))
+        if (value > 0) and (value < 1):
+            value = str(-value).replace('-', '\u2212')
+        else:
+            value = str(-int(value)).replace('-', '\u2212')
+        reversed_labels.append(value)
     ax.set_xticklabels(reversed_labels)
 
     padding = 0.5
-    ymin = 0
-    ymax = len(models) - 1 - padding
-    extended_min = ymin - padding
-    extended_max = ymax
-    ax.set_ylim(extended_min, extended_max)
+    ymin, ymax = ax.get_ylim()
+    ymin -= padding
+    ymax += padding
+    ax.set_ylim(ymin, ymax)
 
     plt.tight_layout()
     plt.savefig(save, dpi=config.image.dpi)
