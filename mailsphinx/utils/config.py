@@ -50,6 +50,8 @@ class Time:
         self.iswa_minimum_time = datetime.datetime(year=2010, month=4, day=14, hour=0, minute=0, second=0, tzinfo=pytz.UTC)
         self.hours_per_week = 168.0
         self.generation_time = None
+        self.start_time = None
+        self.end_time = None
 time = Time()
 
 class Relabel:
