@@ -38,7 +38,7 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
     # MAKE ADVANCED WARNING TIMELINES
     if len(events) > 0:
         counter = 0
-        text += build_html.build_paragraph_title('Advanced Warning Comparison')
+        text += build_html.build_paragraph_title('Advanced Warning Time Comparison')
         for energy_key, energy_group in weekly_df.groupby('Energy Channel Key'):
             energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key) 
             if energy_group['Energy Channel Key'].eq(energy_key).any():

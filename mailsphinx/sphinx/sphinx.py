@@ -80,8 +80,7 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
         # COLLECT SUBSCRIBERS
         subscribers = subscription.load_subscribers()
         for subscriber in subscribers:
-            send_email.send_email('MailSPHINX: Weekly Report [test]', html, subscriber.email, send=do_send_email)
-
+            send_email.send_email('MailSPHINX Test: ISEP (Internal) Email List', html, subscriber.email, send=do_send_email)
     
 def batch(directory, file_pattern_startswith=None, historical_mode_save_directory='historical'):
     """

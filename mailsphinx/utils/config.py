@@ -160,6 +160,8 @@ class Shape:
                              'No Prediction Provided' : '+',
                              None : 'None'}
         self.contingency = 'o'
+        self.left_arrow = '<'
+        self.right_arrow = '>'
 shape = Shape()
 
 class Image:
