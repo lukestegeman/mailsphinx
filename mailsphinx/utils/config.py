@@ -308,6 +308,8 @@ class Order:
                                 ]
 order = Order()
 
+exclude_models = ['SPRINTS Post Eruptive 24-48 hrs', 'SPRINTS Post Eruptive 48-72 hrs', 'SPRINTS Post Eruptive 72-96 hrs']
+
 # CAREFUL WITH THESE
 reset_all_time_df = False
 

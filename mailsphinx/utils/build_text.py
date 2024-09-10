@@ -43,6 +43,10 @@ def build_text(is_historical=False, convert_images_to_base64=False, start_dateti
     warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
     sphinx_df = pd.read_pickle(dataframe_filename)
 
+    # EXCLUDE MODELS
+    for model in config.exclude_models:
+        sphinx_df = sphinx_df[sphinx_df['Model'] != model]
+
     # CONVERT ALL DATAFRAME DATETIMES-LIKE STRINGS TO DATETIMES
     for col in sphinx_df.select_dtypes(include=['datetime64[ns]']):
         sphinx_df[col] = sphinx_df[col].dt.tz_localize('UTC')
