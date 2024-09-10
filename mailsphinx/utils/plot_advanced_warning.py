@@ -6,6 +6,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import pytz
+import warnings
+
 
 plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize
@@ -45,6 +47,7 @@ def plot_advanced_warning(df, save, title, start_datetime, end_datetime, event):
         label.set_ha('left')
         label.set_x(0.0)    
 
+    warnings.filterwarnings('ignore', category=UserWarning)
     labels = ax.get_xticklabels()
     reversed_labels = []
     for label in labels:
