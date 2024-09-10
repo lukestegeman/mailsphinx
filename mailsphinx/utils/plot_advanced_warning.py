@@ -18,9 +18,6 @@ def plot_advanced_warning(df, save, title, start_datetime, end_datetime, event):
     advanced_warning_times_dict = {}
     fig, ax = plt.subplots(figsize=(config.image.width, config.image.vertical_category_allotment_advanced_warning * len(models) + config.image.advanced_warning_base_height))
     sep_onset = event['Observed SEP Threshold Crossing Time'].iloc[0]
-
-    print(event['Observed SEP Threshold Crossing Time'], event['Observed SEP End Time'])
-
     sep_duration_hour = event['Observed SEP Duration'].iloc[0]
     ax.set_title(title)
     for model_category, group in df.groupby('Model Category'):
