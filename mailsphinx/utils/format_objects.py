@@ -10,7 +10,7 @@ def format_data(value):
     if type(value) == type(datetime.datetime):
         return str(value)
     elif type(value) == type(pd.Timestamp(year=2000, month=1, day=1)):
-        return str(value)
+        return format_df_datetime(value)
     elif type(value) == str:
         return value
     elif value is None:
