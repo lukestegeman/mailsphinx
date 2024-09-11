@@ -8,7 +8,6 @@ import os
 def build_legend():
     fig, ax = plt.subplots(figsize=(config.image.width_legend, config.image.height_legend))
     handles = []
-
     handles += build_legend_space_weather()
     handles += build_legend_contingency()
     handles += build_legend_event()
@@ -16,6 +15,30 @@ def build_legend():
     ax.axis('off')
     plt.tight_layout(pad=0.1)
     plt.savefig(os.path.join(config.path.email_image, 'legend.jpg'), bbox_inches='tight', pad_inches=0.0, transparent=True, dpi=config.image.dpi)
+
+def build_legend_peak_flux_separate():
+    fig, ax = plt.subplots(figsize=(config.image.width_legend, config.image.height_legend))
+    handles = []
+    handles += build_legend_peak_flux()
+    ax.legend(handles=handles, loc='center', ncol=1, borderpad=0, borderaxespad=0, frameon=False)
+    ax.axis('off')
+    plt.tight_layout(pad=0.1)
+    plt.savefig(os.path.join(config.path.email_image, 'legend-peak-flux.jpg'), bbox_inches='tight', pad_inches=0.0, transparent=True, dpi=config.image.dpi)
+
+def build_legend_peak_flux():
+    legend_labels = ['Onset Peak',
+                     'Max Flux',
+                     'Max Flux in Prediction Window',
+                    ]
+    legend_markers = []
+    legend_colors = []
+    for label in legend_labels:
+        legend_markers.append(config.shape.associations[label])
+        legend_colors.append('black')
+    handles = []
+    for marker, color, label in zip(legend_markers, legend_colors, legend_labels):
+        handles.append(matplotlib.lines.Line2D([0], [0], marker=marker, color=config.color.legend_background, markerfacecolor='none', markeredgecolor=color, markersize=config.plot.marker_size // 10, label=label))
+    return handles 
 
 def build_legend_contingency():
     legend_labels =  ['Hits',

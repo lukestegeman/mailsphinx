@@ -109,15 +109,15 @@ class Color:
                              'No Prediction Provided' : '#000000',
                              None: 'none'
                              }
-        self.associations['&ge; 1'] = self.associations['>=1 MeV Proton Flux']
-        self.associations['&ge; 5'] = self.associations['>=5 MeV Proton Flux']
-        self.associations['&ge; 10'] = self.associations['>=10 MeV Proton Flux']
-        self.associations['&ge; 30'] = self.associations['>=30 MeV Proton Flux']
-        self.associations['&ge; 50'] = self.associations['>=50 MeV Proton Flux']
-        self.associations['&ge; 60'] = self.associations['>=60 MeV Proton Flux']
-        self.associations['&ge; 100'] = self.associations['>=100 MeV Proton Flux']
-        self.associations['&ge; 500'] = self.associations['>=500 MeV Proton Flux']
-       
+        self.associations['&ge; 1'] = self.associations['> 1 MeV'] = self.associations['>=1 MeV Proton Flux']
+        self.associations['&ge; 5'] = self.associations['> 5 MeV'] = self.associations['>=5 MeV Proton Flux']
+        self.associations['&ge; 10'] = self.associations['> 10 MeV'] = self.associations['>=10 MeV Proton Flux']
+        self.associations['&ge; 30'] = self.associations['> 30 MeV'] = self.associations['>=30 MeV Proton Flux']
+        self.associations['&ge; 50'] = self.associations['> 50 MeV'] = self.associations['>=50 MeV Proton Flux']
+        self.associations['&ge; 60'] = self.associations['> 60 MeV'] = self.associations['>=60 MeV Proton Flux']
+        self.associations['&ge; 100'] = self.associations['> 100 MeV'] = self.associations['>=100 MeV Proton Flux']
+        self.associations['&ge; 500'] = self.associations['> 500 MeV'] = self.associations['>=500 MeV Proton Flux']
+        
         self.associations['>=10 MeV, >=10 pfu Event'] = build_color.get_transparent_color(self.associations['>=10 MeV Proton Flux'], plot.opacity)
         self.associations['>=30 MeV, >=1 pfu Event'] = build_color.get_transparent_color(self.associations['>=30 MeV Proton Flux'], plot.opacity)
         self.associations['>=50 MeV, >=1 pfu Event'] = build_color.get_transparent_color(self.associations['>=50 MeV Proton Flux'], plot.opacity)
@@ -160,7 +160,11 @@ class Shape:
                              'Ongoing SEP Event' : '>',
                              'Unmatched' : '2',
                              'No Prediction Provided' : '+',
-                             None : 'None'}
+                             None : 'None',
+                             
+                             'Onset Peak' : 'o',
+                             'Max Flux' : 'x',
+                             'Max Flux in Prediction Window' : '+'}
         self.contingency = 'o'
         self.left_arrow = '<'
         self.right_arrow = '>'

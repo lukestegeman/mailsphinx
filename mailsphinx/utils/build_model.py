@@ -1,4 +1,5 @@
 from ..utils import build_html
+from ..utils import build_legend
 from ..utils import config
 from ..utils import filter_objects
 from ..utils import manipulate_keys
@@ -78,29 +79,37 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                     counter += 1
 
     # MAKE PREDICTED PEAK FLUX VS. OBSERVED PEAK FLUX
-    counter = 0
     # DETERMINE MIN/MAX VALUES
-    predicted_peak = weekly_df['Predicted SEP Peak Intensity (Onset Peak)']
-    observed_peak = weekly_df['Observed SEP Peak Intensity (Onset Peak)']
-    min_predicted = np.min(predicted_peak)
-    max_predicted = np.max(predicted_peak)
-    min_observed = np.min(observed_peak)
-    max_observed = np.max(observed_peak)
-    min_peak = min(min_predicted, min_observed)
-    max_peak = max(max_predicted, max_observed)
+    # IMPORTANT VALUES
+    # Observed SEP Peak Intensity (Onset Peak)
+    # Observed SEP Peak Intensity Max (Max Flux)
+    # Observed Max Flux in Prediction Window
+    # Predicted SEP Peak Intensity (Onset Peak)
+    # Predicted SEP Peak Intensity Max (Max Flux)
+    counter = 0
     at_least_one_plot = True
     for name, group in weekly_df.groupby('Energy Channel Key'):
-        if (not filter_objects.is_column_empty(group, 'Predicted SEP Peak Intensity (Onset Peak)')) and (not filter_objects.is_column_empty(group, 'Observed SEP Peak Intensity (Onset Peak)')):
-            energy_channel_string = manipulate_keys.convert_energy_key_to_string(name)
-            plot_exists, plot_text = plot_peak_flux.build_peak_flux_plot(energy_channel_string, group, os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg'), min_peak, max_peak, convert_image_to_base64=convert_images_to_base64)
+        energy_channel_string = manipulate_keys.convert_energy_key_to_string(name)
+        for subname, subgroup in group.groupby('Threshold Key'):
+            threshold_flux_string = manipulate_keys.convert_threshold_key_to_string(subname)
+            threshold_flux = float(threshold_flux_string.lstrip('> ').rstrip(' pfu'))
+            is_onset_peak_empty = (filter_objects.is_column_empty(subgroup, 'Predicted SEP Peak Intensity (Onset Peak)')) or (filter_objects.is_column_empty(subgroup, 'Observed SEP Peak Intensity (Onset Peak)'))
+            is_max_flux_empty = (filter_objects.is_column_empty(subgroup, 'Predicted SEP Peak Intensity Max (Max Flux)')) or (filter_objects.is_column_empty(subgroup, 'Observed SEP Peak Intensity Max (Max Flux)'))
+            is_max_flux_in_prediction_window_empty = filter_objects.is_column_empty(subgroup, 'Observed Max Flux in Prediction Window')
+            if is_onset_peak_empty and is_max_flux_empty and is_max_flux_in_prediction_window_empty:
+                plot_exists = False
+            else:
+                plot_path = os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg')
+                counter += 1
+                plot_exists, plot_text = plot_peak_flux.build_peak_flux_plot(energy_channel_string, threshold_flux_string, subgroup, plot_path, threshold_flux, convert_image_to_base64=convert_images_to_base64)
             if plot_exists:
                 if at_least_one_plot:
                     at_least_one_plot = False
                     text += build_html.build_paragraph_title('Predicted Peak Flux vs. Observed Peak Flux')
-                counter += 1
+                    build_legend.build_legend_peak_flux_separate()
+                    text += build_html.build_image(os.path.join(config.path.email_image, 'legend-peak-flux.jpg'), write_as_base64=convert_images_to_base64)
                 text += plot_text
     text += build_html.build_divider()
-
     return text
 
 
