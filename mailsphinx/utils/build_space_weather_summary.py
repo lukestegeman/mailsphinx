@@ -148,7 +148,7 @@ def plot_flux(df_xray, df_proton, df_electron):
         ax_electron.plot(segment['time_tag_2'], segment['175-315 keV'], color=config.color.associations['175-315 keV Electron Flux'])
     ax_electron.grid(axis='both')
     ax_electron.set_yscale('log')
-    ax_electron.set_ylim([1e+1, max(1e+4, np.max(df_electron['175-315 keV']))])
+    ax_electron.set_ylim([1e+1, max(1e+4, df_electron['38-53 keV'].max() * 2)])
     ax_electron.set_ylabel('ACE Differential Electron Flux\n[electron cm$^\mathregular{-2}$ sr$^\mathregular{-1}$ s$^\mathregular{-1}$ MeV$^\mathregular{-1}$]')
 
 
