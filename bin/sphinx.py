@@ -31,6 +31,3 @@ else:
         args.end_datetime = datetime.datetime.strptime(args.end_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
     mailsphinx.sphinx.main(do_send_email=args.send_email, historical=args.historical_mode, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, historical_mode_save_directory=args.historical_mode_save_directory, )
 
-
-
-

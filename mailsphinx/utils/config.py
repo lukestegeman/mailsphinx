@@ -163,8 +163,8 @@ class Shape:
                              None : 'None',
                              
                              'Onset Peak' : 'o',
-                             'Max Flux' : 'x',
-                             'Max Flux in Prediction Window' : '+'}
+                             'Max Flux' : 'X',
+                             'Max Flux in Prediction Window' : 's'}
         self.contingency = 'o'
         self.left_arrow = '<'
         self.right_arrow = '>'

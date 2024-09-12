@@ -10,23 +10,30 @@ plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize
 
 def build_peak_flux_plot(energy_channel_string, threshold_flux_string, df, savefile, threshold_flux, convert_image_to_base64=False):
-    plot_exists = plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, threshold_flux_string, df, savefile, threshold_flux)
+    plot_exists, table_data, table_color_dict, table_text_color_dict = plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, threshold_flux_string, df, savefile, threshold_flux)
     text = ''
     if plot_exists:
-        text = build_html.build_image(savefile, write_as_base64=convert_image_to_base64)
+        text += build_html.build_image(savefile, write_as_base64=convert_image_to_base64)
+        headers = ['Data Type', 'Model Category', 'Hits', 'Misses', 'False Alarms', 'Correct Negatives', 'Peak Flux Forecasts']
+        header_color_dict = dict(zip(headers, [None, None, config.color.associations['Hits'], config.color.associations['Misses'], config.color.associations['False Alarms'], config.color.associations['Correct Negatives'], None]))
+        
+        text += build_html.build_table(headers, table_data, header_color_dict=header_color_dict, table_color_dict=table_color_dict, table_text_color_dict=table_text_color_dict)
     return plot_exists, text
 
 def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, threshold_flux_string, df, save, threshold_flux):
     color_counter = 0
+    row_counter = 0
     plot_exists = False
     figure_created = False
     min_predicted_peak = 1.0e+99
     max_predicted_peak = 0.0
     min_observed_peak = 1.0e+99
     max_observed_peak = 0.0
-    handles = []
+    table_data = []
+    table_color_dict = {}
+    table_text_color_dict = {}
+    #handles = []
     for model_category, group in df.groupby('Model Category'):
-
         min_predicted_peak = 1.0e+99
         max_predicted_peak = 0.0
         min_observed_peak = 1.0e+99
@@ -47,36 +54,66 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, thresh
             else:
                 continue
         else:
-
             if (not figure_created):
                 figure_created = True
                 plt.figure(figsize=(config.image.peak_flux_width, config.image.peak_flux_height))
             if (not is_onset_peak_empty) or (not is_max_flux_empty) or (not is_max_flux_in_prediction_window_empty):
-                handles.append(matplotlib.patches.Patch(color=config.color.color_cycle[color_counter], label=model_category))
+                #handles.append(matplotlib.patches.Patch(color=config.color.color_cycle[color_counter], label=model_category))
                 if not is_onset_peak_empty:
-                    min_predicted_peak = min(min_predicted_peak, onset_peak_group['Predicted SEP Peak Intensity (Onset Peak)'].min())
-                    max_predicted_peak = max(max_predicted_peak, onset_peak_group['Predicted SEP Peak Intensity (Onset Peak)'].max()) 
-                    min_observed_peak = min(min_observed_peak, onset_peak_group['Observed SEP Peak Intensity (Onset Peak)'].min())
-                    max_observed_peak = max(max_observed_peak, onset_peak_group['Observed SEP Peak Intensity (Onset Peak)'].max())
-                    plt.scatter(onset_peak_group['Observed SEP Peak Intensity (Onset Peak)'], onset_peak_group['Predicted SEP Peak Intensity (Onset Peak)'], s=config.plot.marker_size, color=config.color.color_cycle[color_counter], marker=config.shape.associations['Onset Peak'], facecolors='none') 
+                    this_group = onset_peak_group
+                    data_type = 'Onset Peak'
+                    prediction_column = 'Predicted SEP Peak Intensity (Onset Peak)'
+                    observation_column = 'Observed SEP Peak Intensity (Onset Peak)'
+                    min_predicted_peak = min(min_predicted_peak, this_group[this_group[prediction_column] > 0][prediction_column].min())
+                    max_predicted_peak = max(max_predicted_peak, this_group[prediction_column].max())
+                    min_observed_peak = min(min_observed_peak, this_group[this_group[observation_column] > 0][observation_column].min())
+                    max_observed_peak = max(max_observed_peak, this_group[observation_column].max())
+                    plt.scatter(this_group[observation_column], this_group[prediction_column], s=config.plot.marker_size, color=config.color.color_cycle[color_counter], marker=config.shape.associations[data_type], facecolors='none', zorder=2)
+                    row, row_color_dict, row_text_color_dict = build_table_row(this_group, model_category, data_type, prediction_column, observation_column, threshold_flux, row_counter, color_counter) 
+                    row_counter += 1
+                    table_data.append(row)
+                    table_color_dict.update(row_color_dict)
+                    table_text_color_dict.update(row_text_color_dict)
                 if not is_max_flux_empty:
-                    plt.scatter(max_flux_group['Observed SEP Peak Intensity Max (Max Flux)'], max_flux_group['Predicted SEP Peak Intensity Max (Max Flux)'], s=config.plot.marker_size, color=config.color.color_cycle[color_counter], marker=config.shape.associations['Max Flux'])
-                    min_predicted_peak = min(min_predicted_peak, max_flux_group['Predicted SEP Peak Intensity Max (Max Flux)'].min())
-                    max_predicted_peak = max(max_predicted_peak, max_flux_group['Predicted SEP Peak Intensity Max (Max Flux)'].max()) 
-                    min_observed_peak = min(min_observed_peak, max_flux_group['Observed SEP Peak Intensity Max (Max Flux)'].min())
-                    max_observed_peak = max(max_observed_peak, max_flux_group['Observed SEP Peak Intensity Max (Max Flux)'].max())
+                    this_group = max_flux_group
+                    data_type = 'Max Flux'
+                    prediction_column = 'Predicted SEP Peak Intensity Max (Max Flux)'
+                    observation_column = 'Observed SEP Peak Intensity Max (Max Flux)'
+                    min_predicted_peak = min(min_predicted_peak, this_group[this_group[prediction_column] > 0][prediction_column].min())
+                    max_predicted_peak = max(max_predicted_peak, this_group[prediction_column].max())
+                    min_observed_peak = min(min_observed_peak, this_group[this_group[observation_column] > 0][observation_column].min())
+                    max_observed_peak = max(max_observed_peak, this_group[observation_column].max())
+                    plt.scatter(this_group[observation_column], this_group[prediction_column], s=config.plot.marker_size, color=config.color.color_cycle[color_counter], marker=config.shape.associations[data_type], facecolors='none', zorder=1)
+                    row, row_color_dict, row_text_color_dict = build_table_row(this_group, model_category, data_type, prediction_column, observation_column, threshold_flux, row_counter, color_counter)
+                    row_counter += 1
+                    table_data.append(row)
+                    table_color_dict.update(row_color_dict)
+                    table_text_color_dict.update(row_text_color_dict)
                 if not is_max_flux_in_prediction_window_empty: 
-                    min_observed_peak = min(min_observed_peak, max_flux_in_prediction_window_group['Observed Max Flux in Prediction Window'].min())
-                    max_observed_peak = max(max_observed_peak, max_flux_in_prediction_window_group['Observed Max Flux in Prediction Window'].max())
-                    plt.scatter(max_flux_in_prediction_window_group['Observed Max Flux in Prediction Window'], max_flux_in_prediction_window_group['Predicted SEP Peak Intensity Max (Max Flux)'], s=config.plot.marker_size, color=config.color.color_cycle[color_counter], marker=config.shape.associations['Max Flux in Prediction Window']) 
+                    this_group = max_flux_in_prediction_window_group
+                    data_type = 'Max Flux in Prediction Window'
+                    prediction_column = 'Predicted SEP Peak Intensity Max (Max Flux)'
+                    observation_column = 'Observed Max Flux in Prediction Window' 
+                    min_predicted_peak = min(min_predicted_peak, this_group[this_group[prediction_column] > 0][prediction_column].min())
+                    max_predicted_peak = max(max_predicted_peak, this_group[prediction_column].max())
+                    min_observed_peak = min(min_observed_peak, this_group[this_group[observation_column] > 0][observation_column].min())
+                    max_observed_peak = max(max_observed_peak, this_group[observation_column].max())
+                    plt.scatter(this_group[observation_column], this_group[prediction_column], s=config.plot.marker_size, color=config.color.color_cycle[color_counter], marker=config.shape.associations[data_type], facecolors='none', zorder=0)
+                    row, row_color_dict, row_text_color_dict = build_table_row(this_group, model_category, data_type, prediction_column, observation_column, threshold_flux, row_counter, color_counter)
+                    row_counter += 1
+                    table_data.append(row)
+                    table_color_dict.update(row_color_dict)
+                    table_text_color_dict.update(row_text_color_dict)
                 color_counter += 1
-            
+
     if plot_exists:
+        min_predicted_peak = min_predicted_peak / 2
+        min_observed_peak = min_observed_peak / 2
+        max_predicted_peak = max_predicted_peak * 2
+        max_observed_peak = max_observed_peak * 2
         min_peak = min(min_predicted_peak, min_observed_peak)
         max_peak = max(max_predicted_peak, max_observed_peak)
-        difference = np.log10(max_peak - min_peak)
-        min_peak = min_peak / 2
-        max_peak = max_peak * 2
+        
         plt.plot([min_peak, max_peak], [min_peak, max_peak], color='black', linestyle='--')
         title = energy_channel_string + ', ' + threshold_flux_string
         color_key = title.replace('> ', '>=') + ' Event'
@@ -89,18 +126,38 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, thresh
         plt.ylabel('Predicted Peak Flux [pfu]')
         plt.xscale('log')
         plt.yscale('log')
-        plt.xlim([min_peak, max_peak])
-        plt.ylim([min_peak, max_peak])
-        plt.legend(handles=handles, loc='lower right', bbox_to_anchor=(1.0, 1.05), framealpha=config.plot.opacity, fontsize='small')
+        plt.xlim([min_observed_peak, max_observed_peak])
+        plt.ylim([min_predicted_peak, max_predicted_peak])
+        #plt.legend(handles=handles, loc='lower right', bbox_to_anchor=(1.0, 1.05), framealpha=config.plot.opacity, fontsize='small')
         plt.tight_layout()
         plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
         plt.close()
-    return plot_exists
+    return plot_exists, table_data, table_color_dict, table_text_color_dict
 
-
-
-
-
+def build_table_row(df, model_category, data_type, prediction_column, observation_column, threshold_flux, row_counter=0, color_counter=0):
+    hits_condition =              (df[prediction_column] >= threshold_flux) & (df[observation_column] >= threshold_flux)
+    misses_condition =            (df[prediction_column] <  threshold_flux) & (df[observation_column] >= threshold_flux)
+    false_alarms_condition =      (df[prediction_column] >= threshold_flux) & (df[observation_column] <  threshold_flux)
+    correct_negatives_condition = (df[prediction_column] <  threshold_flux) & (df[observation_column] <  threshold_flux)
+    hits =              str(len(df[hits_condition]))
+    misses =            str(len(df[misses_condition]))
+    false_alarms =      str(len(df[false_alarms_condition]))
+    correct_negatives = str(len(df[correct_negatives_condition]))
+    forecasts = str(len(df))
+    row = [data_type, model_category, hits, misses, false_alarms, correct_negatives, forecasts]
+    row_color_dict = {}
+    row_text_color_dict = {}
+    row_color_dict[(row_counter, 1)] = config.color.color_cycle[color_counter]
+    row_color_dict[(row_counter, 2)] = config.color.associations['Hits']
+    row_color_dict[(row_counter, 3)] = config.color.associations['Misses']
+    row_color_dict[(row_counter, 4)] = config.color.associations['False Alarms']
+    row_color_dict[(row_counter, 5)] = config.color.associations['Correct Negatives']
+    row_text_color_dict[(row_counter, 1)] = '#ffffff'
+    row_text_color_dict[(row_counter, 2)] = '#ffffff'
+    row_text_color_dict[(row_counter, 3)] = '#ffffff'
+    row_text_color_dict[(row_counter, 4)] = '#ffffff'
+    row_text_color_dict[(row_counter, 5)] = '#ffffff'
+    return row, row_color_dict, row_text_color_dict
 
 
 
