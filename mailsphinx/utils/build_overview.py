@@ -110,7 +110,7 @@ def build_overview_section(sphinx_df, week_start, week_end, year_start, first_fo
     table_data = []
     dataframe_segments = [weekly_forecasts, yearly_forecasts]
     start_segments = [week_start, year_start]
-    texts = ['This Week: ', 'This Year: ']
+    texts = ['This Period: ', 'This Year: ']
     dfs = []
     for df, start, text in zip(dataframe_segments, start_segments, texts):
         row, df = build_overview_table_row(df, start, text)
