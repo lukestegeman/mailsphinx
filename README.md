@@ -25,7 +25,7 @@ If you are working on a Windows machine, you must add the `$mailsphinx` director
 
 MailSPHINX is packaged with an example SPHINX dataframe, `$mailsphinx/example/dataframe.pkl`.
 
-From the `$mailsphinx` directory, execute `python bin/sphinx.py`. If your installation is correct, the program should execute with no errors (warnings are expected) and a new file `$mailsphinx/filesystem/public/viewable/mailsphinx_*.html`, where the `*` is a representation of the current UTC date and time in `_YYYY-MM-DD_HHMM` format.
+From the `$mailsphinx` directory, execute `python bin/run_mailsphinx.py`. If your installation is correct, the program should execute with no errors (warnings are expected) and a new file `$mailsphinx/filesystem/public/viewable/mailsphinx_*.html`, where the `*` is a representation of the current UTC date and time in `_YYYY-MM-DD_HHMM` format.
 
 ### Command Line Options
 

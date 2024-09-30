@@ -1,4 +1,4 @@
-import mailsphinx.sphinx
+import mailsphinx.mailsphinx
 
 import argparse
 import datetime
@@ -21,7 +21,7 @@ print("WARNING: If you are not on the NASA network, you will not be able to run 
 if args.batch:
     # Batch mode
     assert(args.batch_directory is not None), '--batch-directory argument is REQUIRED for batch mode.'
-    mailsphinx.sphinx.batch(directory=args.batch_directory, file_pattern_startswith=args.batch_filename_pattern_startswith, historical_mode_save_directory=args.historical_mode_save_directory)
+    mailsphinx.mailsphinx.batch(directory=args.batch_directory, file_pattern_startswith=args.batch_filename_pattern_startswith, historical_mode_save_directory=args.historical_mode_save_directory)
 else:
     # Main program
     # CONVERT ARGS
@@ -29,5 +29,5 @@ else:
         args.start_datetime = datetime.datetime.strptime(args.start_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
     if (args.end_datetime is not None):
         args.end_datetime = datetime.datetime.strptime(args.end_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
-    mailsphinx.sphinx.main(do_send_email=args.send_email, historical=args.historical_mode, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, historical_mode_save_directory=args.historical_mode_save_directory, )
+    mailsphinx.mailsphinx.main(do_send_email=args.send_email, historical=args.historical_mode, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, historical_mode_save_directory=args.historical_mode_save_directory, )
 
