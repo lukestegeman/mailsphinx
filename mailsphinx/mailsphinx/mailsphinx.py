@@ -57,7 +57,7 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
     if ((start_datetime is None) or (end_datetime is None)) and historical:
         historical = False
         print('Missing start_datetime or end_datetime; setting historical = False.') 
-    html = build_text.build_text(is_historical=historical, convert_images_to_base64=convert_images_to_base64, start_datetime=start_datetime, end_datetime=end_datetime, dataframe_filename=dataframe_filename)
+    html = build_text.build_text(convert_images_to_base64=convert_images_to_base64, start_datetime=start_datetime, end_datetime=end_datetime, dataframe_filename=dataframe_filename)
     
     # SAVE IN FILESYSTEM
     if historical:

@@ -29,5 +29,5 @@ else:
         args.start_datetime = datetime.datetime.strptime(args.start_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
     if (args.end_datetime is not None):
         args.end_datetime = datetime.datetime.strptime(args.end_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
-    mailsphinx.mailsphinx.main(do_send_email=args.send_email, historical=args.historical_mode, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, historical_mode_save_directory=args.historical_mode_save_directory, )
+    mailsphinx.mailsphinx.main(do_send_email=args.send_email, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, historical_mode_save_directory=args.historical_mode_save_directory, )
 

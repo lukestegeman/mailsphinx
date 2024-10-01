@@ -113,7 +113,10 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, thresh
         max_observed_peak = max_observed_peak * 2
         min_peak = min(min_predicted_peak, min_observed_peak)
         max_peak = max(max_predicted_peak, max_observed_peak)
-        
+       
+        min_peak = min(min_peak, threshold_flux / 10)
+        max_peak = max(max_peak, threshold_flux * 10)
+ 
         plt.plot([min_peak, max_peak], [min_peak, max_peak], color='black', linestyle='--')
         title = energy_channel_string + ', ' + threshold_flux_string
         color_key = title.replace('> ', '>=') + ' Event'
@@ -126,8 +129,8 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, thresh
         plt.ylabel('Predicted Peak Flux [pfu]')
         plt.xscale('log')
         plt.yscale('log')
-        plt.xlim([min_observed_peak, max_observed_peak])
-        plt.ylim([min_predicted_peak, max_predicted_peak])
+        plt.xlim([min_peak, max_peak])
+        plt.ylim([min_peak, max_peak])
         #plt.legend(handles=handles, loc='lower right', bbox_to_anchor=(1.0, 1.05), framealpha=config.plot.opacity, fontsize='small')
         plt.tight_layout()
         plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)

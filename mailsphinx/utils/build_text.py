@@ -26,7 +26,7 @@ def custom_warning_handler(message, category, filename, lineno, file=None, line=
     print('File: ', filename, 'Line: ', lineno)
     traceback.print_stack()
 
-def build_text(is_historical=False, convert_images_to_base64=False, start_datetime=None, end_datetime=None, dataframe_filename=None):
+def build_text(convert_images_to_base64=False, start_datetime=None, end_datetime=None, dataframe_filename=None):
     """
     Writes the text that makes up the email body.
 
@@ -57,11 +57,16 @@ def build_text(is_historical=False, convert_images_to_base64=False, start_dateti
         html = ''
     else:
         # GET TIME BOUNDARIES
-        if is_historical:
+        is_historical = False
+        if (start_datetime is None) and (end_datetime is None):
+            week_start, week_end = manipulate_dates.get_mailsphinx_boundaries(config.time.week_first_day, config.time.week_last_day)
+        elif ((start_datetime is not None) and (end_datetime is None)): 
+            assert(), 'User specified a --start-datetime but not an --end-datetime.'
+        elif ((start_datetime is None) and (end_datetime is not None)):
+            assert(), 'User specified an --end-datetime but not a --start-datetime.'
+        else:
             week_start = pd.to_datetime(start_datetime, utc=True)
             week_end = pd.to_datetime(end_datetime, utc=True)
-        else:
-            week_start, week_end = manipulate_dates.get_mailsphinx_boundaries(config.time.week_first_day, config.time.week_last_day)
         config.time.start_time = week_start
         config.time.end_time = week_end
         year_start = pd.to_datetime(datetime.datetime(day=1, month=1, year=week_start.year, hour=0, minute=0, second=0, microsecond=0), utc=True)

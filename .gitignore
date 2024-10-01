@@ -6,3 +6,4 @@ no_share/
 external_datapath/
 **/reports/*
 **/zips/*
+**/sandbox/*
