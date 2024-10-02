@@ -23,8 +23,8 @@ def scoreboard_call(model_list, input_time, scoreboard_type_toggle):
 
     """
     url = None
-    
-    if type(input_time) == type(datetime.datetime) or type(input_time) == type(pd.Timestamp(1)):
+   
+    if isinstance(input_time, datetime.datetime) or isinstance(input_time, pd.Timestamp):
         date = input_time.date().strftime('%Y-%m-%d')
         time = input_time.time().strftime('%H:%M')
     elif type(input_time) == str:
