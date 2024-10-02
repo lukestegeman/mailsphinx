@@ -53,7 +53,8 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, thresh
                 plot_exists = True
             else:
                 continue
-        else:
+
+        if plot_exists:
             if (not figure_created):
                 figure_created = True
                 plt.figure(figsize=(config.image.peak_flux_width, config.image.peak_flux_height))
@@ -135,7 +136,9 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, thresh
         plt.tight_layout()
         plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
         plt.close()
-    return plot_exists, table_data, table_color_dict, table_text_color_dict
+        return plot_exists, table_data, table_color_dict, table_text_color_dict
+    else:
+        return False, None, None, None
 
 def build_table_row(df, model_category, data_type, prediction_column, observation_column, threshold_flux, row_counter=0, color_counter=0):
     hits_condition =              (df[prediction_column] >= threshold_flux) & (df[observation_column] >= threshold_flux)
