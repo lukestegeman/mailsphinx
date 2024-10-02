@@ -6,8 +6,6 @@ import shutil
 def make_directories():
     if not os.path.exists(config.path.filesystem):
         os.makedirs(config.path.filesystem)
-    if not os.path.exists(config.path.other):
-        os.makedirs(config.path.other)
     if not os.path.exists(config.path.report):
         os.makedirs(config.path.report)
     if not os.path.exists(config.path.email_storage):

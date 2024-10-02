@@ -26,7 +26,7 @@ def custom_warning_handler(message, category, filename, lineno, file=None, line=
     print('File: ', filename, 'Line: ', lineno)
     traceback.print_stack()
 
-def build_text(convert_images_to_base64=False, start_datetime=None, end_datetime=None, dataframe_filename=None):
+def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dataframe_filename=None):
     """
     Writes the text that makes up the email body.
 
@@ -52,26 +52,15 @@ def build_text(convert_images_to_base64=False, start_datetime=None, end_datetime
         sphinx_df[col] = sphinx_df[col].dt.tz_localize('UTC')
     sphinx_df = filter_objects.categorize_column(sphinx_df, 'Model', 'Model Category', 'Model Flavor')
 
-
     if sphinx_df.empty:
         html = ''
     else:
         # GET TIME BOUNDARIES
-        is_historical = False
-        if (start_datetime is None) and (end_datetime is None):
-            week_start, week_end = manipulate_dates.get_mailsphinx_boundaries(config.time.week_first_day, config.time.week_last_day)
-        elif ((start_datetime is not None) and (end_datetime is None)): 
-            assert(), 'User specified a --start-datetime but not an --end-datetime.'
-        elif ((start_datetime is None) and (end_datetime is not None)):
-            assert(), 'User specified an --end-datetime but not a --start-datetime.'
-        else:
-            week_start = pd.to_datetime(start_datetime, utc=True)
-            week_end = pd.to_datetime(end_datetime, utc=True)
-        config.time.start_time = week_start
-        config.time.end_time = week_end
-        year_start = pd.to_datetime(datetime.datetime(day=1, month=1, year=week_start.year, hour=0, minute=0, second=0, microsecond=0), utc=True)
-        weekly_condition = (sphinx_df['Forecast Issue Time'] < week_end) & (sphinx_df['Forecast Issue Time'] >= week_start)
-        yearly_condition = (sphinx_df['Forecast Issue Time'] < week_end) & (sphinx_df['Forecast Issue Time'] >= year_start)
+        config.time.start_time = start_datetime
+        config.time.end_time = end_datetime
+        year_start = pd.to_datetime(datetime.datetime(day=1, month=1, year=start_datetime.year, hour=0, minute=0, second=0, microsecond=0), utc=True)
+        weekly_condition = (sphinx_df['Forecast Issue Time'] < end_datetime) & (sphinx_df['Forecast Issue Time'] >= start_datetime)
+        yearly_condition = (sphinx_df['Forecast Issue Time'] < end_datetime) & (sphinx_df['Forecast Issue Time'] >= year_start)
         first_forecast_datetime = sphinx_df['Forecast Issue Time'].min()
         weekly_forecasts = sphinx_df[weekly_condition]
         yearly_forecasts = sphinx_df[yearly_condition] 
@@ -83,13 +72,13 @@ def build_text(convert_images_to_base64=False, start_datetime=None, end_datetime
         # WRITE HTML
         html = ''
         html += build_html.build_head_section()
-        html += build_overview.build_overview_section(sphinx_df, week_start, week_end, year_start, first_forecast_datetime, weekly_forecasts, yearly_forecasts)
-        event_forecasts, event = build_event.check_for_event(sphinx_df, week_start, week_end)
+        html += build_overview.build_overview_section(sphinx_df, start_datetime, end_datetime, year_start, first_forecast_datetime, weekly_forecasts, yearly_forecasts)
+        event_forecasts, event = build_event.check_for_event(sphinx_df, start_datetime, end_datetime)
         events, _ = build_event.get_unique_events(event_forecasts)
         if event:
-            html += build_event.build_event_section(event_forecasts, week_end) 
-        html += tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, week_start, week_end)
-        html += build_space_weather_summary.build_space_weather_summary(is_historical, start_datetime=week_start, end_datetime=week_end, convert_image_to_base64=convert_images_to_base64)
-        html += build_model.build_model_section(sphinx_df, weekly_forecasts, week_start, week_end, events, convert_images_to_base64) 
+            html += build_event.build_event_section(event_forecasts, end_datetime) 
+        html += tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, start_datetime, end_datetime)
+        html += build_space_weather_summary.build_space_weather_summary(start_datetime=start_datetime, end_datetime=end_datetime, convert_image_to_base64=convert_images_to_base64)
+        html += build_model.build_model_section(sphinx_df, weekly_forecasts, start_datetime, end_datetime, events, convert_images_to_base64) 
     return html
 

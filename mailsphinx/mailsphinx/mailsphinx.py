@@ -1,21 +1,22 @@
 # Internal modules
-from ..utils import send_email
-from ..utils import subscription
 from ..utils import build_text
 from ..utils import config
 from ..utils import format_objects
+from ..utils import manipulate_dates
+from ..utils import send_email
 from ..utils import setup_directory_structure
+from ..utils import subscription
 
 # External modules (included with Python)
+import calendar
 import datetime
 import glob
 import os
+import pytz
 import shutil
 import tarfile
-import calendar
-import pytz
 
-def main(do_send_email=False, historical=False, start_datetime=None, end_datetime=None, convert_images_to_base64=False, dataframe_filename=None, historical_mode_save_directory='historical', external_report_location=None):
+def main(do_send_email=False, start_datetime=None, end_datetime=None, convert_images_to_base64=False, dataframe_filename=None, save_directory_sub='', external_report_location=None):
     """
     Main MailSPHINX function.
         Compiles HTML reports, 
@@ -25,8 +26,6 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
     Parameters
     ----------
     do_send_email : bool
-    
-    historical : bool
     
     start_datetime : NoneType, datetime
 
@@ -53,20 +52,27 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
     for f in html_files:
         shutil.copy(f, os.path.join(config.path.report, os.path.basename(f))) 
 
-    # GENERATE EMAIL CONTENT
-    if ((start_datetime is None) or (end_datetime is None)) and historical:
-        historical = False
-        print('Missing start_datetime or end_datetime; setting historical = False.') 
-    html = build_text.build_text(convert_images_to_base64=convert_images_to_base64, start_datetime=start_datetime, end_datetime=end_datetime, dataframe_filename=dataframe_filename)
+    if (start_datetime is None) and (end_datetime is None):
+        # ASSUME THE MOST RECENT WEEK PERIOD
+        start_datetime, end_datetime = manipulate_dates.get_mailsphinx_boundaries(config.time.week_first_day, config.time.week_last_day)
+    elif ((start_datetime is None) and (end_datetime is not None)):
+        # THROW AN ERROR
+        assert(), 'Please supply an --end-datetime.'        
+    elif ((start_datetime is not None) and (end_datetime is None)):
+        # THROW AN ERROR
+        assert(), 'Please supply a --start-datetime.'
+
+    # start_datetime AND end_datetime ARE KNOWN
+   
+    # GENERATE EMAIL CONTENT 
+    html = build_text.build_text(start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=convert_images_to_base64, dataframe_filename=dataframe_filename)
     
     # SAVE IN FILESYSTEM
-    if historical:
-        save_directory = os.path.join(config.path.email_storage, historical_mode_save_directory)
-        if not os.path.exists(save_directory):
-            os.mkdir(save_directory)
-        savefile = os.path.join(save_directory, 'mailsphinx_' + start_datetime.strftime('%Y-%m-%dT%H:%M:%S').replace(' ', '_').replace(':', '') + '_' + end_datetime.strftime('%Y-%m-%dT%H:%M:%S').replace(' ', '_').replace(':', '') + '.html')
-    else:
-        savefile = os.path.join(config.path.email_storage, 'mailsphinx_' + config.time.generation_time.replace(' ', '_').replace(':', '') + '.html')
+    save_directory = os.path.join(config.path.email_storage, save_directory_sub)
+    if not os.path.exists(save_directory):
+        os.mkdir(save_directory)
+    savefile = os.path.join(save_directory, 'mailsphinx_' + start_datetime.strftime('%Y-%m-%dT%H:%M:%S').replace(' ', '_').replace(':', '') + '_' + end_datetime.strftime('%Y-%m-%dT%H:%M:%S').replace(' ', '_').replace(':', '') + '.html')
+
     html_webpage_text = format_objects.convert_cids_to_image_paths(html)
     a = open(savefile, 'w')
     a.write(html_webpage_text)
@@ -82,7 +88,7 @@ def main(do_send_email=False, historical=False, start_datetime=None, end_datetim
         for subscriber in subscribers:
             send_email.send_email('MailSPHINX Test: ISEP (Internal) Email List', html, subscriber.email, send=do_send_email)
     
-def batch(directory, file_pattern_startswith=None, historical_mode_save_directory='historical'):
+def batch(directory, file_pattern_startswith=None, save_directory_sub='batch'):
     """
     Batch mode for generating many HTML files. Mainly for testing.
     
@@ -91,9 +97,6 @@ def batch(directory, file_pattern_startswith=None, historical_mode_save_director
     directory : str
     """
     dataframe_path = './.tmp/SPHINX_dataframe.pkl'    
-    config.reset_all_time_df = True
-    if os.path.exists(config.path.all_time_statistics_overview):
-        os.remove(config.path.all_time_statistics_overview)
 
     # READ DIRECTORY
     zip_files = os.listdir(directory)
@@ -126,14 +129,12 @@ def batch(directory, file_pattern_startswith=None, historical_mode_save_director
                     member.name = os.path.basename(member.name)
                     tar.extract(member, path='./.tmp/reports/')
             
-        config.reset_all_time_df = False
-
         year = int(time_tag[:4])
         month = int(time_tag[4:])
         days_in_month = calendar.monthrange(year, month)[1]
         start_datetime = datetime.datetime(year=year, month=month, day=1).replace(tzinfo=pytz.UTC)
         end_datetime = datetime.datetime(year=year, month=month, day=days_in_month).replace(tzinfo=pytz.UTC)
-        main(do_send_email=False, historical=True, start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=True, dataframe_filename=dataframe_path, historical_mode_save_directory=historical_mode_save_directory, external_report_location='./.tmp/reports/')
+        main(do_send_email=False, start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=True, dataframe_filename=dataframe_path, save_directory_sub=save_directory_sub, external_report_location='./.tmp/reports/')
         
 if __name__ == '__main__':
     None 

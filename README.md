@@ -32,8 +32,7 @@ From the `$mailsphinx` directory, execute `python bin/run_mailsphinx.py`. If you
     `-h, --help` : Shows a help message.
     `-sm, --send-email` : If active, attempts to send emails to subscribers listed in `$mailsphinx/no_share/subscribers.csv`.
     `-df, --dataframe-filename` : Specifies the SPHINX dataframe to be parsed by MailSPHINX.
-    `-hm, --historical-mode` : If active, downloads historical GOES/ACE-EPAM data for evaluation period and filters dataframe to include only forecasts issued within selected period between `start_datetime` and `end_datetime`, inclusive.
-    `-hmsd, --historical-mode-save-directory` : Directory to which historical MailSPHINX emails are saved. Default is `$mailsphinx/filesystem/public/viewable/historical`.
+    `-save, --save-directory` : Directory to which MailSPHINX emails are saved within the publicly viewable filesystem `$mailsphinx/filesystem/public/viewable/`. Default is the base level `$mailsphinx/filesystem/public/viewable/` for regular operation and `$mailsphinx/filesystem/public/viewable/batch/` in batch mode.
     `-sd, --start-datetime` : Specifies first day of evaluation period (YYYY-MM-DD). If `None`, defaults to UTC Monday prior to most recent UTC Monday. Time fixed at 00:00 UTC.
     `-ed, --end-datetime` : Specifies last day of the evaluation period (YYYY-MM-DD). If `None`, defaults to most recent UTC Monday (including today, if it is UTC Monday). Time fixed at 00:00 UTC.
     `-b, --batch` : If active, runs in batch mode, which will generate many MailSPHINX HTML files. Does not allow for email distribution. Expects a --batch-directory argument.
@@ -56,7 +55,6 @@ Most importantly, the user is able to modify paths to important locations for re
 
     `Path.filesystem` : Directory where MailSPHINX-generated content is archived.
     `Path.report` : Directory where SPHINX reports are archived (subdirectory of `Path.filesystem`).
-    `Path.other` : Directory where intermediate data is archived (subdirectory of `Path.filesystem`).
     `Path.email_storage` : Directory where MailSPHINX emails are stored as HTML files (subdirectory of `Path.filesystem`).
     `Path.index` : `index.html` file location; an HTML file for navigating the MailSPHINX Archive.
     `Path.index_stylesheet` : `styles.css` file location; the CSS stylesheet for the MailSPHINX Archive.
@@ -66,7 +64,6 @@ Most importantly, the user is able to modify paths to important locations for re
     `Path.email_header_template` : Template HTML file that contains header information for MailSPHINX emails.
     `Path.index_template` : Template HTML file that contains header information for MailSPHINX Archive.
     `Path.index_template_stylesheet` : Template CSS stylesheet file for MailSPHINX Archive.
-    `Path.all_time_statistics_overview` : Data file that contains all-time forecast statistics since last reset.
 
     **`Path.dataframe` : Data file that contains SPHINX dataframe.**
     **`Path.external_report_location` : Directory where SPHINX-generated validation reports are stored; this path is used for their retrieval and inclusion into the MailSPHINX Archive.**

@@ -15,7 +15,7 @@ import warnings
 plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize 
 
-def build_space_weather_summary(historical=False, start_datetime=None, end_datetime=None, convert_image_to_base64=False):
+def build_space_weather_summary(start_datetime=None, end_datetime=None, convert_image_to_base64=False):
     goes_proton_df = download_flux(flux_type='proton', start_datetime=start_datetime, end_datetime=end_datetime)
     goes_xray_df = download_flux(flux_type='xray', start_datetime=start_datetime, end_datetime=end_datetime)
     ace_electron_df = download_flux(flux_type='electron', start_datetime=start_datetime, end_datetime=end_datetime)
@@ -50,7 +50,7 @@ def rerequest(url, tries=0):
     except requests.exceptions.Timeout as e:
         return rerequest(url, tries + 1)
 
-def download_flux(flux_type, historical=False, start_datetime=None, end_datetime=None):
+def download_flux(flux_type, start_datetime=None, end_datetime=None):
     if flux_type == 'proton' or flux_type == 'xray':
         df = download_goes_flux(flux_type, start_datetime=start_datetime, end_datetime=end_datetime)
     elif flux_type == 'electron':

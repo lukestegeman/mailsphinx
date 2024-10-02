@@ -77,13 +77,6 @@ def build_overview_table_row(df, start_datetime, text=''):
 
     return row, df    
 
-def save_all_time_statistics(df):
-    df.to_pickle(config.path.all_time_statistics_overview)
-
-def load_all_time_statistics():
-    df = pd.read_pickle(config.path.all_time_statistics_overview)
-    return df
-
 def build_overview_section(sphinx_df, week_start, week_end, year_start, first_forecast_datetime, weekly_forecasts, yearly_forecasts):
     """
     Writes the html that makes up the Overview section of the email body.
@@ -108,47 +101,18 @@ def build_overview_section(sphinx_df, week_start, week_end, year_start, first_fo
     """
     # WRITE HTML TABLE FROM LIST OF LISTS
     table_data = []
-    dataframe_segments = [weekly_forecasts, yearly_forecasts]
-    start_segments = [week_start, year_start]
-    texts = ['This Period: ', 'This Year: ']
+    dataframe_segments = [weekly_forecasts, yearly_forecasts, sphinx_df]
+    start_segments = [week_start, year_start, first_forecast_datetime]
+    texts = ['This Period: ', 'This Year: ', 'All Time: ']
     dfs = []
     for df, start, text in zip(dataframe_segments, start_segments, texts):
         row, df = build_overview_table_row(df, start, text)
         table_data.append(row)
-        dfs.append(df)
- 
-    # ALL-TIME ROW
-    if not config.reset_all_time_df:
-        dfs[-1]['time_period'].iloc[0] = dfs[-1]['time_period'].iloc[0].replace('This Year:', '')
-        if os.path.exists(config.path.all_time_statistics_overview):
-            df_all_time = load_all_time_statistics()
-            time_period_all_time = df_all_time['time_period'].iloc[0].lstrip('This Year: ')
-            df_all_time = df_all_time.loc[:, df_all_time.columns != 'time_period'] + dfs[0].loc[:, dfs[0].columns != 'time_period']
-            df_all_time['time_period'] = [time_period_all_time]
-            df_all_time.insert(0, 'time_period', df_all_time.pop('time_period'))
-        else:
-            df_all_time = dfs[-1]
-    else:
-        df_all_time = dfs[-1]
-    save_all_time_statistics(df_all_time)
-    row = []
-    counter = 0
-    for column, data in df_all_time.iteritems():
-        if counter == 0:
-            appendage = 'All Time: '
-        else:
-            appendage = ''
-        row.append(appendage + str(data.iloc[0]))
-        counter += 1
-    table_data.append(row)
-
-    #headers = ['Time Period', 'Forecasts', 'Not Clear Forecasts', 'Above Threshold Peak Flux Forecasts', 'Threshold Crossings (>10 MeV, >10 pfu)', 'Threshold Crossings (>100 MeV, >1 pfu)']
-
+        dfs.append(df) 
     headers = ['Time Period', 'Forecasts', 'Not Clear Forecasts', 'Above Threshold Peak Flux Forecasts']    
     text = build_html.build_section_title('Overview')
     text += build_html.build_table(headers, table_data)
     text += build_html.build_divider()
-
 
     #text += 'Number of forecasts this week: ' + str(number_weekly_forecasts) + '<br><br>'
     #text += 'Number of not clear forecasts this week: ' + str(number_weekly_forecasts_not_clear) + '<br><br>'
