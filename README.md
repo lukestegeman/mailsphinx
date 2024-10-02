@@ -35,6 +35,7 @@ From the `$mailsphinx` directory, execute `python bin/run_mailsphinx.py`. If you
     `-save, --save-directory` : Directory to which MailSPHINX emails are saved within the publicly viewable filesystem `$mailsphinx/filesystem/public/viewable/`. Default is the base level `$mailsphinx/filesystem/public/viewable/` for regular operation and `$mailsphinx/filesystem/public/viewable/batch/` in batch mode.
     `-sd, --start-datetime` : Specifies first day of evaluation period (YYYY-MM-DD). If `None`, defaults to UTC Monday prior to most recent UTC Monday. Time fixed at 00:00 UTC.
     `-ed, --end-datetime` : Specifies last day of the evaluation period (YYYY-MM-DD). If `None`, defaults to most recent UTC Monday (including today, if it is UTC Monday). Time fixed at 00:00 UTC.
+    `-pi, --persistent-images` : Encodes images in base64 format; images are embedded in HTML.` 
     `-b, --batch` : If active, runs in batch mode, which will generate many MailSPHINX HTML files. Does not allow for email distribution. Expects a --batch-directory argument.
     `-bd, --batch-directory` : Directory that contains many `*.tgz` files for MailSPHINX processing.
     `-bfp, --batch-filename-pattern-startswith` : Filters out files in `batch_directory` with names that do not match the provided starting pattern.
