@@ -11,6 +11,7 @@ parser.add_argument('-sd', '--start-datetime', type=str, default=None, help='Spe
 parser.add_argument('-ed', '--end-datetime', type=str, default=None, help='Specifies last day of the evaluation period (YYYY-MM-DD).')
 parser.add_argument('-df', '--dataframe-filename', type=str, default=None, help='Specifies dataframe to use for evaluation.')
 parser.add_argument('-save', '--save-directory', type=str, default='', help='Directory to which MailSPHINX emails are saved.')
+parser.add_argument('-pi', '--persistent-images', action='store_true', default=False, help='If active, converts all images to base64 so that HTML files are portable.')
 parser.add_argument('-b', '--batch', action='store_true', default=False, help='If active, runs in batch mode. Expects a --batch-directory argument.')
 parser.add_argument('-bd', '--batch-directory', type=str, default=None, help='Directory that contains many *.tgz files for MailSPHINX processing.')
 parser.add_argument('-bfp', '--batch-filename-pattern-startswith', type=str, default=None, help='Filters out files in batch_directory with names that do not match the provided starting pattern.')
@@ -28,5 +29,5 @@ else:
         args.start_datetime = datetime.datetime.strptime(args.start_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
     if (args.end_datetime is not None):
         args.end_datetime = datetime.datetime.strptime(args.end_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
-    mailsphinx.mailsphinx.main(do_send_email=args.send_email, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, save_directory_sub=args.save_directory, )
+    mailsphinx.mailsphinx.main(do_send_email=args.send_email, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, save_directory_sub=args.save_directory, convert_images_to_base64=args.persistent_images)
 
