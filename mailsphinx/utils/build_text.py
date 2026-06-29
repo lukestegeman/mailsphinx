@@ -1,5 +1,6 @@
 from ..utils import build_event
 from ..utils import build_html
+from ..utils import build_metrics
 from ..utils import build_model
 from ..utils import build_overview
 from ..utils import build_space_weather_summary
@@ -76,9 +77,9 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         event_forecasts, event = build_event.check_for_event(sphinx_df, start_datetime, end_datetime)
         events, _ = build_event.get_unique_events(event_forecasts)
         if event:
-            html += build_event.build_event_section(event_forecasts, end_datetime) 
-        html += tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, start_datetime, end_datetime)
-        html += build_space_weather_summary.build_space_weather_summary(start_datetime=start_datetime, end_datetime=end_datetime, convert_image_to_base64=convert_images_to_base64)
-        html += build_model.build_model_section(sphinx_df, weekly_forecasts, start_datetime, end_datetime, events, convert_images_to_base64) 
+            html += build_event.build_event_section(event_forecasts, week_end) 
+        html += tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, week_start, week_end)
+        html += build_metrics.build_metrics_section(sphinx_df)
+        html += build_space_weather_summary.build_space_weather_summary(is_historical, start_datetime=week_start, end_datetime=week_end, convert_image_to_base64=convert_images_to_base64)
+        html += build_model.build_model_section(sphinx_df, weekly_forecasts, week_start, week_end, events, convert_images_to_base64) 
     return html
-

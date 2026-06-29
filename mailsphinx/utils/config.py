@@ -8,15 +8,18 @@ from ..utils import build_color
 # Email configuration
 class Email:
     def __init__(self):
-        self.send_from = 'luke.a.stegeman@nasa.gov'
+        self.send_from = 'MailSPHINX <m_sphinx@sep-validation.ccmc.smce.nasa.gov>'
         self.reply_to = 'luke.a.stegeman@nasa.gov'
-        self.server = 'ndc-relay.ndc.nasa.gov'
+        self.server = 'localhost'
 email = Email()
 
 class Path:
     def __init__(self):
         self.filesystem = os.path.abspath(os.path.join('filesystem', 'public', 'viewable'))
         self.report = os.path.abspath(os.path.join(self.filesystem, 'report'))
+        self.other = os.path.abspath(os.path.join(self.filesystem, 'other'))
+        self.all_time_statistics_overview = os.path.abspath(os.path.join(self.other, 'all_time_statistics_overview.pkl'))
+        self.all_time_metrics = os.path.abspath(os.path.join(self.other, 'all_time_metrics.pkl'))
         self.email_storage = os.path.abspath(os.path.join(self.filesystem, 'email'))
         self.index = os.path.abspath(os.path.join(self.filesystem, 'index.html'))
         self.index_stylesheet = os.path.abspath(os.path.join(self.filesystem, 'styles.css'))
@@ -70,7 +73,8 @@ relabel = Relabel()
 
 class Plot:
     def __init__(self):
-        self.font = 'Arial'
+        #self.font = 'Arial'
+        self.font = 'sans-serif'
         self.fontsize = 16
         self.marker_size = 100
         self.opacity = 0.3
@@ -313,3 +317,6 @@ class Order:
 order = Order()
 
 exclude_models = ['SPRINTS Post Eruptive 24-48 hrs', 'SPRINTS Post Eruptive 48-72 hrs', 'SPRINTS Post Eruptive 72-96 hrs']
+
+# CAREFUL WITH THESE
+reset_all_time_df = False

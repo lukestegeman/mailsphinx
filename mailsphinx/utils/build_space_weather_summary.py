@@ -89,9 +89,9 @@ def download_goes_flux(flux_type, start_datetime, end_datetime):
         data = response.text
         df = pd.read_csv(io.StringIO(data))
         if flux_type == 'proton':
-            df.columns = ['time_tag', '>=1 MeV', '>=5 MeV', '>=10 MeV', '>=30 MeV', '>=50 MeV', '>=100 MeV', 'E>=0.8 MeV', 'E>=2 MeV', 'E>=4 MeV', '>=60 MeV', '>=500 MeV']
+            df.columns = ['time_tag', '>=1 MeV', '>=5 MeV', '>=10 MeV', '>=30 MeV', '>=50 MeV', '>=100 MeV', 'E>=0.8 MeV', 'E>=2 MeV', 'E>=4 MeV', '>=60 MeV', '>=500 MeV', 'primary', 'secondary']
         elif flux_type == 'xray':
-            df.columns = ['time_tag', 'short', 'long']
+            df.columns = ['time_tag', 'short', 'long', 'primary']
         df['time_tag'] = pd.to_datetime(df['time_tag'], format='%Y-%m-%dT%H:%M:%SZ', errors='coerce')
     else:
         print(f'Failed to retrieve data. HTTP Status code: {response.status_code}')

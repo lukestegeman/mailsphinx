@@ -7,21 +7,27 @@ import re
 
 # FORMATTING
 def format_data(value):
-    if type(value) == type(datetime.datetime):
-        return str(value)
-    elif type(value) == type(pd.Timestamp(year=2000, month=1, day=1)):
+    # CHECK FOR NA/NaT/None FIRST SINCE pd.isna HANDLES ALL NA TYPES SAFELY
+    try:
+        if pd.isna(value):
+            return 'N/A'
+    except (TypeError, ValueError):
+        pass
+    if isinstance(value, pd.Timestamp):
         return format_df_datetime(value)
-    elif type(value) == str:
+    if isinstance(value, datetime.datetime):
+        return str(value)
+    if isinstance(value, str):
         return value
-    elif value is None:
+    if value is None:
         return 'N/A'
-    elif np.isnan(value):
-        return 'N/A'
-    else:
+    try:
         if (value >= 10000) or (value <= 0.0001):
             return '{:.4E}'.format(value)
         else:
             return '{:.4f}'.format(value)
+    except (TypeError, ValueError):
+        return str(value)
 
 def format_df_datetime(value):
     if isinstance(value, (datetime.datetime, pd.Timestamp)):
@@ -71,10 +77,3 @@ def convert_cids_to_image_paths(text):
     for match in matches:
         text = text.replace('cid:' + match, swapped_dict[match[:-1]] + '"')
     return text
-     
-    
-
-
-
-
-
