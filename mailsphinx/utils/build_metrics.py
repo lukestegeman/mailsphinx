@@ -1,9 +1,16 @@
-"""
-Compute and display per-model validation metrics in the MailSPHINX email.
+"""Display per-model validation metrics in the MailSPHINX email.
 
-Metrics are computed over all time (X) and the change since the last
-run (+/-Y) is shown alongside. The all-time values from the previous
-run are stored in all_time_metrics.pkl and updated each run.
+All metrics are read directly from sphinxval's own metrics pkl files
+(all_clear_metrics.pkl, probability_metrics.pkl, peak_intensity_metrics.pkl,
+peak_intensity_max_metrics.pkl, max_flux_in_pred_win_metrics.pkl), which
+are copied to a persistent location by run_sphinx.sh each month since
+SPHINX validates against the full cumulative history. MailSPHINX performs
+no metric computation of its own — this avoids duplicating sphinxval's
+formulas and any risk of disagreement between the two.
+
+The all-time values from the previous run are stored in
+all_time_metrics.pkl so the +/-Y change since the last report
+can be shown alongside each value.
 
 Sections:
     All Clear:   Hit Rate, FAR, FAER, HSS, TSS
@@ -18,7 +25,6 @@ import os
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score
 
 from ..utils import build_html
 from ..utils import config
@@ -28,150 +34,90 @@ from ..utils import config
 # PATHS
 # -----------------------------------------------------------------------
 
-_METRICS_PKL = config.path.all_time_metrics
+_DELTA_PKL = config.path.all_time_metrics
 
 
 # -----------------------------------------------------------------------
-# METRIC COMPUTATION HELPERS
+# SPHINXVAL METRICS FILE COLUMN NAME MAPPING
 # -----------------------------------------------------------------------
 
-def _contingency_counts(df):
-    """Return (H, M, FA, CN) for a dataframe subset."""
-    h  = ((df['Observed SEP All Clear'] == False) & (df['Predicted SEP All Clear'] == False)).sum()
-    m  = ((df['Observed SEP All Clear'] == False) & (df['Predicted SEP All Clear'] == True )).sum()
-    fa = ((df['Observed SEP All Clear'] == True ) & (df['Predicted SEP All Clear'] == False)).sum()
-    cn = ((df['Observed SEP All Clear'] == True ) & (df['Predicted SEP All Clear'] == True )).sum()
-    return int(h), int(m), int(fa), int(cn)
+# (display_name, sphinxval_column_name)
+_AC_METRICS = [
+    ('Hit Rate', 'Hit Rate'),
+    ('FAR',      'False Alarm Ratio'),
+    ('FAER',     'False Alarm Event Ratio'),
+    ('HSS',      'Heidke Skill Score'),
+    ('TSS',      'True Skill Statistic'),
+]
+_PROB_METRICS = [
+    ('Brier Score', 'Brier Score'),
+    ('AUC',          'Area Under ROC Curve'),
+]
+_FLUX_METRICS = [
+    ('MLE',  'Median Log Error (MedLE)'),
+    ('WF2',  'Percentage within a factor of 2 (%)'),
+    ('WF10', 'Percentage within an Order of Magnitude (%)'),
+]
+
+# sphinxval METRICS PKL FILENAMES KEYED BY FLUX LABEL
+_FLUX_METRICS_FILES = {
+    'Onset Peak':              'peak_intensity_metrics.pkl',
+    'Max Flux':                'peak_intensity_max_metrics.pkl',
+    'Max Flux in Pred Window': 'max_flux_in_pred_win_metrics.pkl',
+}
 
 
-def _hit_rate(h, m):
-    return h / (h + m) if (h + m) > 0 else np.nan
+# -----------------------------------------------------------------------
+# LOAD SPHINXVAL'S OWN METRICS PKLS
+# -----------------------------------------------------------------------
+
+def _metrics_dir():
+    # ABSOLUTE PATH: WHERE run_sphinx.sh COPIES sphinxval's METRICS PKLS
+    # EACH MONTH (SEE cumulative_metrics_directory IN run_sphinx.sh)
+    return '/home/m_sphinx/test_reqs/sphinxval/pushvivid_data/cumulative_metrics'
 
 
-def _far(h, fa):
-    return fa / (fa + h) if (fa + h) > 0 else np.nan
-
-
-def _faer(fa, h, m):
-    return fa / (h + m) if (h + m) > 0 else np.nan
-
-
-def _hss(h, m, fa, cn):
-    denom = (h + m) * (m + cn) + (h + fa) * (fa + cn)
-    return 2 * (h * cn - fa * m) / denom if denom > 0 else np.nan
-
-
-def _tss(h, m, fa, cn):
-    pod = h / (h + m) if (h + m) > 0 else np.nan
-    pofd = fa / (fa + cn) if (fa + cn) > 0 else np.nan
-    if np.isnan(pod) or np.isnan(pofd):
-        return np.nan
-    return pod - pofd
-
-
-def _brier_score(df):
-    sub = df[df['Predicted SEP Probability'].notna() &
-             df['Observed SEP Probability'].notna()]
-    if len(sub) == 0:
-        return np.nan
-    return float(np.mean((sub['Predicted SEP Probability'] -
-                          sub['Observed SEP Probability']) ** 2))
-
-
-def _auc(df):
-    sub = df[df['Predicted SEP Probability'].notna() &
-             df['Observed SEP Probability'].notna()]
-    if len(sub) == 0 or sub['Observed SEP Probability'].nunique() < 2:
-        return np.nan
+def _load_sphinxval_metrics(filename):
+    """Load one of sphinxval's metrics pkls from the persistent cumulative
+    location. Returns an empty dataframe if not found (e.g. first run)."""
+    path = os.path.join(_metrics_dir(), filename)
+    if not os.path.exists(path):
+        return pd.DataFrame()
     try:
-        return float(roc_auc_score(sub['Observed SEP Probability'],
-                                   sub['Predicted SEP Probability']))
+        return pd.read_pickle(path)
     except Exception:
+        return pd.DataFrame()
+
+
+def _sphinxval_metric_for_model(metrics_df, model_name, column):
+    """Look up a single metric value for a given full model name
+    (e.g. 'MAG4 LOS_FEr') from a sphinxval metrics dataframe. If the
+    model appears with multiple energy/threshold rows, returns the
+    mean across rows."""
+    if metrics_df.empty or 'Model' not in metrics_df.columns or column not in metrics_df.columns:
         return np.nan
-
-
-def _flux_metrics(pred, obs):
-    """Compute median log error, within-factor-2, and within-factor-10
-    for a pair of predicted/observed flux Series. Both must be > 0."""
-    mask = pred.notna() & obs.notna() & (pred > 0) & (obs > 0)
-    sub_pred = pred[mask]
-    sub_obs = obs[mask]
-    n = len(sub_pred)
-    if n == 0:
-        return np.nan, np.nan, np.nan, 0
-    ratio = sub_pred / sub_obs
-    log_error = float(np.median(np.log10(ratio)))
-    wf2 = float((ratio.between(0.5, 2.0)).sum() / n)
-    wf10 = float((ratio.between(0.1, 10.0)).sum() / n)
-    return log_error, wf2, wf10, n
+    sub = metrics_df[metrics_df['Model'] == model_name]
+    if sub.empty:
+        return np.nan
+    val = pd.to_numeric(sub[column], errors='coerce').mean()
+    return float(val) if pd.notna(val) else np.nan
 
 
 # -----------------------------------------------------------------------
-# PER-MODEL METRIC COMPUTATION
-# -----------------------------------------------------------------------
-
-def _compute_model_metrics(df):
-    """Return a dict mapping (model_category, model_flavor) →
-    dict of metric_name → value, computed over the full df."""
-    results = {}
-    for cat, cat_group in df.groupby('Model Category'):
-        for flav, sub in cat_group.groupby('Model Flavor'):
-            key = (cat, flav)
-            h, m, fa, cn = _contingency_counts(sub)
-            mle_op, wf2_op, wf10_op, n_op = _flux_metrics(
-                sub['Predicted SEP Peak Intensity (Onset Peak)'],
-                sub['Observed SEP Peak Intensity (Onset Peak)'])
-            mle_mf, wf2_mf, wf10_mf, n_mf = _flux_metrics(
-                sub['Predicted SEP Peak Intensity Max (Max Flux)'],
-                sub['Observed SEP Peak Intensity Max (Max Flux)'])
-            mle_mw, wf2_mw, wf10_mw, n_mw = _flux_metrics(
-                sub['Predicted SEP Peak Intensity Max (Max Flux)'],
-                sub['Observed Max Flux in Prediction Window'])
-            results[key] = {
-                # ALL CLEAR
-                'Hit Rate':  _hit_rate(h, m),
-                'FAR':       _far(h, fa),
-                'FAER':      _faer(fa, h, m),
-                'HSS':       _hss(h, m, fa, cn),
-                'TSS':       _tss(h, m, fa, cn),
-                # PROBABILITY
-                'Brier Score': _brier_score(sub),
-                'AUC':         _auc(sub),
-                # MAX FLUX — ONSET PEAK
-                'MLE (Onset Peak)':   mle_op,
-                'WF2 (Onset Peak)':   wf2_op,
-                'WF10 (Onset Peak)':  wf10_op,
-                'N (Onset Peak)':     n_op,
-                # MAX FLUX — MAX FLUX
-                'MLE (Max Flux)':     mle_mf,
-                'WF2 (Max Flux)':     wf2_mf,
-                'WF10 (Max Flux)':    wf10_mf,
-                'N (Max Flux)':       n_mf,
-                # MAX FLUX — MAX FLUX IN PREDICTION WINDOW
-                'MLE (Max Flux in Pred Win)':  mle_mw,
-                'WF2 (Max Flux in Pred Win)':  wf2_mw,
-                'WF10 (Max Flux in Pred Win)': wf10_mw,
-                'N (Max Flux in Pred Win)':    n_mw,
-            }
-    return results
-
-
-# -----------------------------------------------------------------------
-# ALL-TIME PKL LOAD / SAVE
+# ALL-TIME DELTA PKL LOAD / SAVE
 # -----------------------------------------------------------------------
 
 def _load_previous_metrics():
-    """Load the previous run's all-time metrics, or return empty dict."""
-    if os.path.exists(_METRICS_PKL):
+    if os.path.exists(_DELTA_PKL):
         try:
-            return pd.read_pickle(_METRICS_PKL)
+            return pd.read_pickle(_DELTA_PKL)
         except Exception:
             pass
     return {}
 
 
 def _save_metrics(metrics):
-    pd.to_pickle(metrics, _METRICS_PKL)
+    pd.to_pickle(metrics, _DELTA_PKL)
 
 
 # -----------------------------------------------------------------------
@@ -179,16 +125,12 @@ def _save_metrics(metrics):
 # -----------------------------------------------------------------------
 
 def _fmt(value, precision=3):
-    """Format a metric value for display."""
     if value is None or (isinstance(value, float) and np.isnan(value)):
         return 'N/A'
-    if isinstance(value, int):
-        return str(value)
     return f'{value:.{precision}f}'
 
 
 def _fmt_delta(current, previous, precision=3):
-    """Format current value with delta from previous run as X (+/-Y)."""
     cur_str = _fmt(current, precision)
     if previous is None or (isinstance(previous, float) and np.isnan(previous)):
         return cur_str
@@ -199,8 +141,47 @@ def _fmt_delta(current, previous, precision=3):
     return f'{cur_str} ({sign}{_fmt(delta, precision)})'
 
 
+# -----------------------------------------------------------------------
+# PER-MODEL METRIC ASSEMBLY
+# -----------------------------------------------------------------------
+
+def _compute_model_metrics(df):
+    """Return a dict mapping (model_category, model_flavor) -> dict of
+    metric_name -> value, pulled entirely from sphinxval's own metrics
+    pkls. df is used only to enumerate which (category, flavor) pairs
+    are present in the current dataframe."""
+    ac_df = _load_sphinxval_metrics('all_clear_metrics.pkl')
+    prob_df = _load_sphinxval_metrics('probability_metrics.pkl')
+    flux_dfs = {label: _load_sphinxval_metrics(fname)
+                for label, fname in _FLUX_METRICS_FILES.items()}
+
+    results = {}
+    for cat, cat_group in df.groupby('Model Category'):
+        for flav, _ in cat_group.groupby('Model Flavor'):
+            key = (cat, flav)
+            model_name = f'{cat} {flav}'.strip()
+
+            metrics = {}
+            for label, col in _AC_METRICS:
+                metrics[label] = _sphinxval_metric_for_model(ac_df, model_name, col)
+
+            for label, col in _PROB_METRICS:
+                metrics[label] = _sphinxval_metric_for_model(prob_df, model_name, col)
+
+            for flux_label in _FLUX_METRICS_FILES:
+                for label, col in _FLUX_METRICS:
+                    metrics[f'{label} ({flux_label})'] = _sphinxval_metric_for_model(
+                        flux_dfs[flux_label], model_name, col)
+
+            results[key] = metrics
+    return results
+
+
+# -----------------------------------------------------------------------
+# TABLE BUILDING
+# -----------------------------------------------------------------------
+
 def _build_metrics_table(current, previous, metric_names, title, headers):
-    """Build an HTML table for a set of metrics across all models."""
     buf = io.StringIO()
     buf.write(build_html.build_paragraph_title(title))
     table_data = []
@@ -210,11 +191,7 @@ def _build_metrics_table(current, previous, metric_names, title, headers):
         for m in metric_names:
             cur_val = metrics.get(m, np.nan)
             prev_val = prev_metrics.get(m, np.nan)
-            # N (SAMPLE SIZE) COLUMNS SHOWN WITHOUT DELTA
-            if m.startswith('N '):
-                row.append(_fmt(cur_val, 0))
-            else:
-                row.append(_fmt_delta(cur_val, prev_val))
+            row.append(_fmt_delta(cur_val, prev_val))
         table_data.append(row)
     if table_data:
         buf.write(build_html.build_table(headers, table_data))
@@ -228,7 +205,8 @@ def _build_metrics_table(current, previous, metric_names, title, headers):
 # -----------------------------------------------------------------------
 
 def build_metrics_section(df):
-    """Compute metrics, update the all-time pkl, and return HTML."""
+    """Assemble metrics from sphinxval's metrics pkls (plus FAER/WF10
+    computed locally), update the all-time delta pkl, and return HTML."""
     current = _compute_model_metrics(df)
     previous = _load_previous_metrics()
     _save_metrics(current)
@@ -237,37 +215,24 @@ def build_metrics_section(df):
     buf.write(build_html.build_section_title('Metrics Summary'))
     buf.write(build_html.build_regular_text(
         'Values shown as X (+/-Y), where X is the all-time metric and '
-        'Y is the change since the previous report. '
-        'MLE = Median Log Error (log10(pred/obs)). '
-        'WF2/WF10 = fraction of forecasts within a factor of 2/10 of observed. '
-        'N = number of paired samples used.'))
+        'Y is the change since the previous report. All metrics are '
+        'taken directly from sphinxval. '
+        'MLE = Median Log Error. WF2/WF10 = percentage of forecasts '
+        'within a factor of 2/10 (order of magnitude) of observed.'))
 
-    # ALL CLEAR METRICS
     ac_metrics = ['Hit Rate', 'FAR', 'FAER', 'HSS', 'TSS']
     ac_headers = ['Model Category', 'Model Flavor'] + ac_metrics
     buf.write(_build_metrics_table(
-        current, previous, ac_metrics,
-        'All Clear Metrics', ac_headers))
+        current, previous, ac_metrics, 'All Clear Metrics', ac_headers))
 
-    # PROBABILITY METRICS
     prob_metrics = ['Brier Score', 'AUC']
     prob_headers = ['Model Category', 'Model Flavor'] + prob_metrics
     buf.write(_build_metrics_table(
-        current, previous, prob_metrics,
-        'Probability Metrics', prob_headers))
+        current, previous, prob_metrics, 'Probability Metrics', prob_headers))
 
-    # MAX FLUX METRICS — THREE OBSERVATION TYPES
-    for label, suffix in [
-        ('Onset Peak',               'Onset Peak'),
-        ('Max Flux',                 'Max Flux'),
-        ('Max Flux in Pred Window',  'Max Flux in Pred Win'),
-    ]:
-        flux_metrics = [
-            f'MLE ({suffix})', f'WF2 ({suffix})',
-            f'WF10 ({suffix})', f'N ({suffix})',
-        ]
-        flux_headers = ['Model Category', 'Model Flavor',
-                        'MLE', 'WF2', 'WF10', 'N']
+    for label in _FLUX_METRICS_FILES:
+        flux_metrics = [f'MLE ({label})', f'WF2 ({label})', f'WF10 ({label})']
+        flux_headers = ['Model Category', 'Model Flavor', 'MLE', 'WF2', 'WF10']
         buf.write(_build_metrics_table(
             current, previous, flux_metrics,
             f'Max Flux Metrics ({label})', flux_headers))
