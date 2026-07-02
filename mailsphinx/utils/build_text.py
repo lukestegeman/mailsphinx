@@ -20,7 +20,6 @@ import warnings
 pd.options.mode.chained_assignment = None
 
 
-
 def custom_warning_handler(message, category, filename, lineno, file=None, line=None):
     print('Warning: ', message)
     print('Category: ', category.__name__)
@@ -33,13 +32,17 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
 
     Parameters
     ----------
+    start_datetime : datetime
+    end_datetime : datetime
+    convert_images_to_base64 : bool
+    dataframe_filename : str or None
 
     Returns
     -------
     html : string
     """
-    #warnings.simplefilter('always', category=RuntimeWarning)   
-    #warnings.showwarning = custom_warning_handler 
+    #warnings.simplefilter('always', category=RuntimeWarning)
+    #warnings.showwarning = custom_warning_handler
 
     warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
     sphinx_df = pd.read_pickle(dataframe_filename)
@@ -64,7 +67,7 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         yearly_condition = (sphinx_df['Forecast Issue Time'] < end_datetime) & (sphinx_df['Forecast Issue Time'] >= year_start)
         first_forecast_datetime = sphinx_df['Forecast Issue Time'].min()
         weekly_forecasts = sphinx_df[weekly_condition]
-        yearly_forecasts = sphinx_df[yearly_condition] 
+        yearly_forecasts = sphinx_df[yearly_condition]
 
         # SORT BY ENERGY CHANNEL KEY
         weekly_forecasts['Energy Channel Key'] = pd.Categorical(weekly_forecasts['Energy Channel Key'], categories=config.order.energy_key_order, ordered=True)
@@ -77,9 +80,9 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         event_forecasts, event = build_event.check_for_event(sphinx_df, start_datetime, end_datetime)
         events, _ = build_event.get_unique_events(event_forecasts)
         if event:
-            html += build_event.build_event_section(event_forecasts, week_end) 
-        html += tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, week_start, week_end)
+            html += build_event.build_event_section(event_forecasts, end_datetime)
+        html += tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, start_datetime, end_datetime)
         html += build_metrics.build_metrics_section(sphinx_df)
-        html += build_space_weather_summary.build_space_weather_summary(is_historical, start_datetime=week_start, end_datetime=week_end, convert_image_to_base64=convert_images_to_base64)
-        html += build_model.build_model_section(sphinx_df, weekly_forecasts, week_start, week_end, events, convert_images_to_base64) 
+        html += build_space_weather_summary.build_space_weather_summary(start_datetime=start_datetime, end_datetime=end_datetime, convert_image_to_base64=convert_images_to_base64)
+        html += build_model.build_model_section(sphinx_df, weekly_forecasts, start_datetime, end_datetime, events, convert_images_to_base64)
     return html

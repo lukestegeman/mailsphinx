@@ -161,6 +161,8 @@ class Shape:
                              'No Matching Threshold' : '*', 
                              'Ongoing SEP Event' : '>',
                              'Unmatched' : '2',
+                             'Trigger not associated with observed SEP' : 'd',
+                             'No SEP Event (SubEvent)' : 's',
                              'No Prediction Provided' : '+',
                              None : 'None',
                              
