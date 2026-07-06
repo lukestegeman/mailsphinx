@@ -17,11 +17,22 @@ def extract_common_substring(s):
 
     leftover : string
     """
+    # KNOWN MULTI-WORD PREFIXES THAT SHOULD BE TREATED AS A SINGLE CATEGORY.
+    # IF THE STRING STARTS WITH ONE OF THESE, USE THE FULL PREFIX AS THE
+    # CATEGORY RATHER THAN SPLITTING ON THE FIRST SPACE OR UNDERSCORE.
+    known_prefixes = [
+        'HESPERIA REleASE',
+    ]
+    for prefix in known_prefixes:
+        if s.startswith(prefix):
+            leftover = s[len(prefix):].lstrip(' _')
+            return prefix, leftover
+
     parts = re.split(r'[ _]', s, maxsplit=1)
     most_common = s + ''
     leftover = ''
     if len(parts) > 1:
-        # Return the most common substring part
+        # RETURN THE MOST COMMON SUBSTRING PART
         most_common = parts[0]
         leftover = parts[1]
     return most_common, leftover

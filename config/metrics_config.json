@@ -1,0 +1,18 @@
+{
+    "_comment": "PER-MODEL METRICS SECTION CONFIGURATION FOR MAILSPHINX. MODELS LISTED UNDER 'exclude' FOR A GIVEN SECTION WILL NOT APPEAR IN THAT SECTION'S TABLE. USE [category, flavor] PAIRS MATCHING THE Model Category AND Model Flavor COLUMNS IN THE SPHINX DATAFRAME (E.G. HESPERIA REleASE splits to category='HESPERIA REleASE', flavor='ACE 30-min'). MODELS NOT LISTED ARE SHOWN BY DEFAULT.",
+    "all_clear": {
+        "exclude": []
+    },
+    "probability": {
+        "exclude": []
+    },
+    "max_flux_onset_peak": {
+        "exclude": []
+    },
+    "max_flux_max_flux": {
+        "exclude": []
+    },
+    "max_flux_pred_window": {
+        "exclude": []
+    }
+}
