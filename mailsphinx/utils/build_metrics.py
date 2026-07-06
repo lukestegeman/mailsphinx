@@ -5,12 +5,16 @@ All metrics are read directly from sphinxval's own metrics pkl files
 peak_intensity_max_metrics.pkl, max_flux_in_pred_win_metrics.pkl), which
 are copied to a persistent location by run_sphinx.sh each month since
 SPHINX validates against the full cumulative history. MailSPHINX performs
-no metric computation of its own — this avoids duplicating sphinxval's
-formulas and any risk of disagreement between the two.
+no metric computation of its own.
 
 The all-time values from the previous run are stored in
 all_time_metrics.pkl so the +/-Y change since the last report
 can be shown alongside each value.
+
+Per-model section visibility is controlled by
+mailsphinx/config/metrics_config.json. Models listed under 'exclude'
+for a given section are omitted from that section's table entirely.
+Models not listed appear by default.
 
 Sections:
     All Clear:   Hit Rate, FAR, FAER, HSS, TSS
@@ -21,6 +25,7 @@ Sections:
 """
 
 import io
+import json
 import os
 
 import numpy as np
@@ -36,12 +41,25 @@ from ..utils import config
 
 _DELTA_PKL = config.path.all_time_metrics
 
+# METRICS CONFIG FILE — CONTROLS WHICH MODELS APPEAR IN EACH SECTION
+_METRICS_CONFIG_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    'config', 'metrics_config.json'
+)
+
+# SECTION KEYS USED IN metrics_config.json
+_SECTION_ALL_CLEAR        = 'all_clear'
+_SECTION_PROBABILITY      = 'probability'
+_SECTION_ONSET_PEAK       = 'max_flux_onset_peak'
+_SECTION_MAX_FLUX         = 'max_flux_max_flux'
+_SECTION_PRED_WINDOW      = 'max_flux_pred_window'
+
 
 # -----------------------------------------------------------------------
 # SPHINXVAL METRICS FILE COLUMN NAME MAPPING
 # -----------------------------------------------------------------------
 
-# (display_name, sphinxval_column_name)
+# (DISPLAY_NAME, SPHINXVAL_COLUMN_NAME)
 _AC_METRICS = [
     ('Hit Rate', 'Hit Rate'),
     ('FAR',      'False Alarm Ratio'),
@@ -51,7 +69,7 @@ _AC_METRICS = [
 ]
 _PROB_METRICS = [
     ('Brier Score', 'Brier Score'),
-    ('AUC',          'Area Under ROC Curve'),
+    ('AUC',         'Area Under ROC Curve'),
 ]
 _FLUX_METRICS = [
     ('MLE',  'Median Log Error (MedLE)'),
@@ -59,12 +77,43 @@ _FLUX_METRICS = [
     ('WF10', 'Percentage within an Order of Magnitude (%)'),
 ]
 
-# sphinxval METRICS PKL FILENAMES KEYED BY FLUX LABEL
-_FLUX_METRICS_FILES = {
-    'Onset Peak':              'peak_intensity_metrics.pkl',
-    'Max Flux':                'peak_intensity_max_metrics.pkl',
-    'Max Flux in Pred Window': 'max_flux_in_pred_win_metrics.pkl',
-}
+# SPHINXVAL METRICS PKL FILENAMES KEYED BY FLUX LABEL AND SECTION KEY
+_FLUX_SECTIONS = [
+    (_SECTION_ONSET_PEAK,  'Onset Peak',              'peak_intensity_metrics.pkl'),
+    (_SECTION_MAX_FLUX,    'Max Flux',                'peak_intensity_max_metrics.pkl'),
+    (_SECTION_PRED_WINDOW, 'Max Flux in Pred Window', 'max_flux_in_pred_win_metrics.pkl'),
+]
+
+
+# -----------------------------------------------------------------------
+# METRICS CONFIG LOAD
+# -----------------------------------------------------------------------
+
+def _load_metrics_config():
+    """Load metrics_config.json. Returns a dict of section -> set of
+    excluded (category, flavor) tuples. Missing file returns empty config
+    (all models shown in all sections)."""
+    if not os.path.exists(_METRICS_CONFIG_PATH):
+        return {}
+    try:
+        with open(_METRICS_CONFIG_PATH, 'r') as f:
+            raw = json.load(f)
+    except Exception:
+        return {}
+    config_out = {}
+    for section, section_cfg in raw.items():
+        if section.startswith('_'):
+            # SKIP COMMENT KEYS
+            continue
+        excluded = section_cfg.get('exclude', [])
+        config_out[section] = {(pair[0], pair[1]) for pair in excluded if len(pair) == 2}
+    return config_out
+
+
+def _is_excluded(metrics_config, section, cat, flav):
+    """Return True if (cat, flav) is excluded from section."""
+    excluded = metrics_config.get(section, set())
+    return (cat, flav) in excluded
 
 
 # -----------------------------------------------------------------------
@@ -78,8 +127,8 @@ def _metrics_dir():
 
 
 def _load_sphinxval_metrics(filename):
-    """Load one of sphinxval's metrics pkls from the persistent cumulative
-    location. Returns an empty dataframe if not found (e.g. first run)."""
+    """LOAD ONE OF sphinxval's METRICS PKLS FROM THE PERSISTENT CUMULATIVE
+    LOCATION. RETURNS AN EMPTY DATAFRAME IF NOT FOUND."""
     path = os.path.join(_metrics_dir(), filename)
     if not os.path.exists(path):
         return pd.DataFrame()
@@ -90,10 +139,9 @@ def _load_sphinxval_metrics(filename):
 
 
 def _sphinxval_metric_for_model(metrics_df, model_name, column):
-    """Look up a single metric value for a given full model name
-    (e.g. 'MAG4 LOS_FEr') from a sphinxval metrics dataframe. If the
-    model appears with multiple energy/threshold rows, returns the
-    mean across rows."""
+    """LOOK UP A SINGLE METRIC VALUE FOR A GIVEN FULL MODEL NAME FROM A
+    sphinxval METRICS DATAFRAME. IF THE MODEL APPEARS WITH MULTIPLE
+    ENERGY/THRESHOLD ROWS, RETURNS THE MEAN ACROSS ROWS."""
     if metrics_df.empty or 'Model' not in metrics_df.columns or column not in metrics_df.columns:
         return np.nan
     sub = metrics_df[metrics_df['Model'] == model_name]
@@ -146,14 +194,14 @@ def _fmt_delta(current, previous, precision=3):
 # -----------------------------------------------------------------------
 
 def _compute_model_metrics(df):
-    """Return a dict mapping (model_category, model_flavor) -> dict of
-    metric_name -> value, pulled entirely from sphinxval's own metrics
-    pkls. df is used only to enumerate which (category, flavor) pairs
-    are present in the current dataframe."""
-    ac_df = _load_sphinxval_metrics('all_clear_metrics.pkl')
+    """RETURN A DICT MAPPING (model_category, model_flavor) -> DICT OF
+    metric_name -> VALUE, PULLED ENTIRELY FROM sphinxval's OWN METRICS
+    PKLS. df IS USED ONLY TO ENUMERATE WHICH (CATEGORY, FLAVOR) PAIRS
+    ARE PRESENT IN THE CURRENT DATAFRAME."""
+    ac_df   = _load_sphinxval_metrics('all_clear_metrics.pkl')
     prob_df = _load_sphinxval_metrics('probability_metrics.pkl')
     flux_dfs = {label: _load_sphinxval_metrics(fname)
-                for label, fname in _FLUX_METRICS_FILES.items()}
+                for _, label, fname in _FLUX_SECTIONS}
 
     results = {}
     for cat, cat_group in df.groupby('Model Category'):
@@ -168,7 +216,7 @@ def _compute_model_metrics(df):
             for label, col in _PROB_METRICS:
                 metrics[label] = _sphinxval_metric_for_model(prob_df, model_name, col)
 
-            for flux_label in _FLUX_METRICS_FILES:
+            for _, flux_label, _ in _FLUX_SECTIONS:
                 for label, col in _FLUX_METRICS:
                     metrics[f'{label} ({flux_label})'] = _sphinxval_metric_for_model(
                         flux_dfs[flux_label], model_name, col)
@@ -181,11 +229,16 @@ def _compute_model_metrics(df):
 # TABLE BUILDING
 # -----------------------------------------------------------------------
 
-def _build_metrics_table(current, previous, metric_names, title, headers):
+def _build_metrics_table(current, previous, metric_names, section_key,
+                         title, headers, metrics_config):
+    """BUILD AN HTML TABLE FOR A METRICS SECTION, SKIPPING ANY MODELS
+    THAT ARE EXCLUDED IN metrics_config FOR THIS SECTION."""
     buf = io.StringIO()
     buf.write(build_html.build_paragraph_title(title))
     table_data = []
     for (cat, flav), metrics in sorted(current.items()):
+        if _is_excluded(metrics_config, section_key, cat, flav):
+            continue
         prev_metrics = previous.get((cat, flav), {})
         row = [cat, flav]
         for m in metric_names:
@@ -205,11 +258,12 @@ def _build_metrics_table(current, previous, metric_names, title, headers):
 # -----------------------------------------------------------------------
 
 def build_metrics_section(df):
-    """Assemble metrics from sphinxval's metrics pkls (plus FAER/WF10
-    computed locally), update the all-time delta pkl, and return HTML."""
+    """ASSEMBLE METRICS FROM sphinxval's METRICS PKLS, UPDATE THE
+    ALL-TIME DELTA PKL, AND RETURN HTML."""
     current = _compute_model_metrics(df)
     previous = _load_previous_metrics()
     _save_metrics(current)
+    metrics_config = _load_metrics_config()
 
     buf = io.StringIO()
     buf.write(build_html.build_section_title('Metrics Summary'))
@@ -223,19 +277,21 @@ def build_metrics_section(df):
     ac_metrics = ['Hit Rate', 'FAR', 'FAER', 'HSS', 'TSS']
     ac_headers = ['Model Category', 'Model Flavor'] + ac_metrics
     buf.write(_build_metrics_table(
-        current, previous, ac_metrics, 'All Clear Metrics', ac_headers))
+        current, previous, ac_metrics, _SECTION_ALL_CLEAR,
+        'All Clear Metrics', ac_headers, metrics_config))
 
     prob_metrics = ['Brier Score', 'AUC']
     prob_headers = ['Model Category', 'Model Flavor'] + prob_metrics
     buf.write(_build_metrics_table(
-        current, previous, prob_metrics, 'Probability Metrics', prob_headers))
+        current, previous, prob_metrics, _SECTION_PROBABILITY,
+        'Probability Metrics', prob_headers, metrics_config))
 
-    for label in _FLUX_METRICS_FILES:
-        flux_metrics = [f'MLE ({label})', f'WF2 ({label})', f'WF10 ({label})']
+    for section_key, flux_label, _ in _FLUX_SECTIONS:
+        flux_metrics = [f'MLE ({flux_label})', f'WF2 ({flux_label})', f'WF10 ({flux_label})']
         flux_headers = ['Model Category', 'Model Flavor', 'MLE', 'WF2', 'WF10']
         buf.write(_build_metrics_table(
-            current, previous, flux_metrics,
-            f'Max Flux Metrics ({label})', flux_headers))
+            current, previous, flux_metrics, section_key,
+            f'Max Flux Metrics ({flux_label})', flux_headers, metrics_config))
 
     buf.write(build_html.build_divider())
     return buf.getvalue()
