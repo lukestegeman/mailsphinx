@@ -1,6 +1,7 @@
 from ..utils import build_html
 from ..utils import config
 from ..utils import format_objects
+from ..utils import manipulate_keys
 
 import numpy as np
 import os
@@ -8,12 +9,13 @@ import os
 # ABBREVIATED LABELS FOR NOT-EVALUATED MATCH STATUSES USED IN THE
 # BREAKDOWN TABLE. FULL NAMES ARE SHOWN IN THE LEGEND ABOVE THE TABLE.
 _NE_ABBREVIATIONS = {
-    'Ongoing SEP Event':                        'OSE',
-    'No SEP Event':                             'NSE',
-    'Trigger not associated with observed SEP': 'TNS',
-    'SEP Event':                                'SE',
-    'No SEP Event (SubEvent)':                  'NSE-S',
-    'Trigger/Input after Observed Phenomenon':  'TIA',
+    'Ongoing SEP Event':                                                      'OSE',
+    'No SEP Event':                                                           'NSE',
+    'Trigger not associated with observed SEP':                               'TNS',
+    'SEP Event':                                                              'SE',
+    'No SEP Event (SubEvent)':                                                'NSE-S',
+    'Trigger/Input after Observed Phenomenon':                                'TIA',
+    'Trigger associated with observed SEP but SEP not in prediction window':  'TSPW',
 }
 
 
@@ -49,8 +51,8 @@ def build_single_stat_contingency_table(df, mode, header):
 
 
 def _not_evaluated_condition(df):
-    """Return a boolean Series for rows that fall outside the four
-    standard contingency categories."""
+    """Return a boolean Series for rows outside the four standard
+    contingency categories."""
     hit = (df['Observed SEP All Clear'] == False) & (df['Predicted SEP All Clear'] == False)
     miss = (df['Observed SEP All Clear'] == False) & (df['Predicted SEP All Clear'] == True)
     fa = (df['Observed SEP All Clear'] == True) & (df['Predicted SEP All Clear'] == False)
@@ -79,7 +81,7 @@ def compute_contingency_table_metrics(df, mode='all', additional_condition=True)
         forecasts = len(df)
     else:
         forecasts = np.sum(additional_condition)
-    contingency_data = {
+    return {
         'Hits':              hits,
         'Misses':            misses,
         'False Alarms':      false_alarms,
@@ -87,7 +89,6 @@ def compute_contingency_table_metrics(df, mode='all', additional_condition=True)
         'Not Evaluated':     not_evaluated,
         'Forecasts':         forecasts,
     }
-    return contingency_data
 
 
 def compute_ne_breakdown(df, additional_condition=True):
@@ -96,24 +97,37 @@ def compute_ne_breakdown(df, additional_condition=True):
     if additional_condition is not True:
         ne_mask = ne_mask & additional_condition
     ne_df = df[ne_mask]
-    breakdown = {}
-    for full_name, abbrev in _NE_ABBREVIATIONS.items():
-        breakdown[abbrev] = (ne_df['All Clear Match Status'] == full_name).sum()
-    return breakdown
+    return {abbrev: (ne_df['All Clear Match Status'] == full_name).sum()
+            for full_name, abbrev in _NE_ABBREVIATIONS.items()}
 
 
-def build_contingency_table_data(df, header, mode='all', parenthesized_start_datetime=None, parenthesized_end_datetime=None):
+def _channel_label(energy_key, threshold_key):
+    """Return a human-readable label for an energy/threshold pair."""
+    energy_str = manipulate_keys.convert_energy_key_to_string(energy_key)
+    threshold_str = manipulate_keys.convert_threshold_key_to_string(threshold_key)
+    return f'{energy_str}, {threshold_str}'
+
+
+def _normalize_energy_key(energy_key):
+    """Strip the mismatch suffix from an energy channel key so that
+    REleASE mismatch keys (e.g. min.10.0...MeV_min.15.8...) are grouped
+    under their base channel (e.g. min.10.0...MeV)."""
+    return energy_key.split('_min.')[0]
+
+
+def build_contingency_table_data(df, header, mode='all',
+                                  parenthesized_start_datetime=None,
+                                  parenthesized_end_datetime=None):
+    """Build contingency table rows for one (energy_key, threshold_key) slice."""
     table_data = []
     table_color_dict = {}
     table_text_color_dict = {}
-    # BREAKDOWN TABLE DATA: ONE ROW PER MODEL/FLAVOR, COLUMNS ARE NE ABBREVS
     breakdown_table_data = []
     ne_abbrev_list = list(_NE_ABBREVIATIONS.values())
 
     row_counter = 0
     for name, group in df.groupby('Model Category'):
         for subname, subgroup in group.groupby('Model Flavor'):
-            # MAIN TABLE ROW
             table_line_dict = dict(zip(header, [''] * len(header)))
             table_line_dict['Model Category'] = name
             table_line_dict['Model Flavor'] = subname
@@ -131,25 +145,19 @@ def build_contingency_table_data(df, header, mode='all', parenthesized_start_dat
             else:
                 contingency_data_parenthesized = None
             for item in header:
-                if item in list(contingency_data.keys()):
-                    if contingency_data[item] is not None:
-                        if contingency_data_parenthesized is not None:
-                            table_line_dict[item] = format_objects.format_parenthesized_entry(
-                                contingency_data[item], contingency_data_parenthesized[item])
-                        else:
-                            table_line_dict[item] = str(contingency_data[item])
+                if item in contingency_data and contingency_data[item] is not None:
+                    if contingency_data_parenthesized is not None:
+                        table_line_dict[item] = format_objects.format_parenthesized_entry(
+                            contingency_data[item], contingency_data_parenthesized[item])
+                    else:
+                        table_line_dict[item] = str(contingency_data[item])
             table_data.append(list(table_line_dict.values()))
 
-            # COLOR CODING FOR MAIN TABLE
-            color_map = {
-                'Hits': 2, 'Misses': 3, 'False Alarms': 4,
-                'Correct Negatives': 5,
-            }
+            color_map = {'Hits': 2, 'Misses': 3, 'False Alarms': 4, 'Correct Negatives': 5}
             for key, col_idx in color_map.items():
                 table_color_dict[(row_counter, col_idx)] = config.color.associations[key]
                 table_text_color_dict[(row_counter, col_idx)] = '#ffffff'
 
-            # BREAKDOWN TABLE ROW
             breakdown_all = compute_ne_breakdown(subgroup)
             breakdown_row = [name, subname]
             if contingency_data_parenthesized is not None:
@@ -161,23 +169,24 @@ def build_contingency_table_data(df, header, mode='all', parenthesized_start_dat
                 for abbrev in ne_abbrev_list:
                     breakdown_row.append(str(breakdown_all[abbrev]))
             breakdown_table_data.append(breakdown_row)
-
             row_counter += 1
+
     return table_data, table_color_dict, table_text_color_dict, breakdown_table_data
 
 
 def _build_ne_legend():
-    """Build a small legend table mapping abbreviations to full match status names."""
     headers = ['Abbreviation', 'Match Status']
     table_data = [[abbrev, full] for full, abbrev in _NE_ABBREVIATIONS.items()]
     return build_html.build_table(headers, table_data)
 
 
 def build_all_clear_contingency_table(df, week_start, week_end):
+    """Build All Clear Contingency Tables and Not Evaluated Breakdown,
+    with one sub-table per (energy channel, threshold) pair."""
     text = build_html.build_paragraph_title('All Clear Contingency Tables')
     text += build_html.build_regular_text(
         "Values are given in the form X (+Y), where X is the all-time quantity, "
-        "and Y is the quantity added from this week's results. X is inclusive of Y.")
+        "and Y is the quantity added from this period's results. X is inclusive of Y.")
 
     headers = ['Model Category', 'Model Flavor', 'Hits', 'Misses', 'False Alarms',
                'Correct Negatives', 'Not Evaluated', 'Forecasts', 'All-Time Report Link']
@@ -189,25 +198,49 @@ def build_all_clear_contingency_table(df, week_start, week_end):
         config.color.associations['Correct Negatives'],
         None, None, None,
     ]))
+    ne_abbrev_list = list(_NE_ABBREVIATIONS.values())
+    breakdown_headers = ['Model Category', 'Model Flavor'] + ne_abbrev_list
 
-    table_data, table_color_dict, table_text_color_dict, breakdown_table_data = \
-        build_contingency_table_data(df, headers, 'all', week_start, week_end)
+    # COLLECT NOT-EVALUATED BREAKDOWN TABLES TO RENDER AFTER ALL CONTINGENCY TABLES
+    breakdown_sections = []
 
-    text += build_html.build_table(
-        headers, table_data,
-        header_color_dict=header_color_dict,
-        table_color_dict=table_color_dict,
-        table_text_color_dict=table_text_color_dict)
+    for energy_key, threshold_key in config.order.energy_channel_threshold_order:
+        # FILTER TO THIS ENERGY/THRESHOLD PAIR. NORMALIZE THE ENERGY CHANNEL
+        # KEY SO THAT REleASE MISMATCH KEYS ARE GROUPED UNDER THEIR BASE CHANNEL.
+        channel_mask = (
+            (df['Energy Channel Key'].apply(_normalize_energy_key) == energy_key) &
+            (df['Threshold Key'] == threshold_key)
+        )
+        channel_df = df[channel_mask]
+        if channel_df.empty:
+            continue
 
-    # NOT-EVALUATED BREAKDOWN TABLE WITH LEGEND
+        label = _channel_label(energy_key, threshold_key)
+        text += build_html.build_paragraph_title(label, sublevel=1)
+
+        table_data, table_color_dict, table_text_color_dict, breakdown_table_data = \
+            build_contingency_table_data(channel_df, headers, 'all', week_start, week_end)
+
+        if table_data:
+            text += build_html.build_table(
+                headers, table_data,
+                header_color_dict=header_color_dict,
+                table_color_dict=table_color_dict,
+                table_text_color_dict=table_text_color_dict)
+
+        breakdown_sections.append((label, breakdown_table_data))
+
+    # NOT-EVALUATED BREAKDOWN SECTION
     text += build_html.build_paragraph_title('Not Evaluated Breakdown')
     text += build_html.build_regular_text(
         "Counts of not-evaluated forecasts by match status reason. "
         "Values are in the form X (+Y) as above.")
     text += _build_ne_legend()
-    ne_abbrev_list = list(_NE_ABBREVIATIONS.values())
-    breakdown_headers = ['Model Category', 'Model Flavor'] + ne_abbrev_list
-    text += build_html.build_table(breakdown_headers, breakdown_table_data)
+
+    for label, breakdown_table_data in breakdown_sections:
+        if breakdown_table_data:
+            text += build_html.build_paragraph_title(label, sublevel=1)
+            text += build_html.build_table(breakdown_headers, breakdown_table_data)
 
     text += build_html.build_divider()
     return text

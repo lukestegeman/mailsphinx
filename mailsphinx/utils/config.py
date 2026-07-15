@@ -19,7 +19,6 @@ class Path:
         self.report = os.path.abspath(os.path.join(self.filesystem, 'report'))
         self.other = os.path.abspath(os.path.join(self.filesystem, 'other'))
         self.all_time_statistics_overview = os.path.abspath(os.path.join(self.other, 'all_time_statistics_overview.pkl'))
-        self.all_time_metrics = os.path.abspath(os.path.join(self.other, 'all_time_metrics.pkl'))
         self.email_storage = os.path.abspath(os.path.join(self.filesystem, 'email'))
         self.index = os.path.abspath(os.path.join(self.filesystem, 'index.html'))
         self.index_stylesheet = os.path.abspath(os.path.join(self.filesystem, 'styles.css'))
@@ -161,8 +160,6 @@ class Shape:
                              'No Matching Threshold' : '*', 
                              'Ongoing SEP Event' : '>',
                              'Unmatched' : '2',
-                             'Trigger not associated with observed SEP' : 'd',
-                             'No SEP Event (SubEvent)' : 's',
                              'No Prediction Provided' : '+',
                              None : 'None',
                              
@@ -316,6 +313,21 @@ class Order:
                                  'min.100.0.max.-1.0.units.MeV',
                                  'min.500.0.max.-1.0.units.MeV'
                                 ]
+        # ORDERED LIST OF (ENERGY_CHANNEL_KEY, THRESHOLD_KEY) PAIRS TO
+        # INCLUDE IN MAILSPHINX TABLES. REMOVE AN ENTRY TO EXCLUDE THAT
+        # CHANNEL/THRESHOLD COMBINATION FROM ALL TABLES AND METRICS.
+        # THE REleASE MISMATCH KEY IS LISTED SEPARATELY FROM THE STANDARD
+        # >10 MeV KEY SINCE SPHINX TREATS THEM AS DISTINCT CHANNELS.
+        self.energy_channel_threshold_order = [
+            ('min.10.0.max.-1.0.units.MeV',
+             'threshold.10.0.units.1 / (cm2 s sr)'),
+            ('min.30.0.max.-1.0.units.MeV',
+             'threshold.1.0.units.1 / (cm2 s sr)'),
+            ('min.50.0.max.-1.0.units.MeV',
+             'threshold.1.0.units.1 / (cm2 s sr)'),
+            ('min.100.0.max.-1.0.units.MeV',
+             'threshold.1.0.units.1 / (cm2 s sr)'),
+        ]
 order = Order()
 
 exclude_models = ['SPRINTS Post Eruptive 24-48 hrs', 'SPRINTS Post Eruptive 48-72 hrs', 'SPRINTS Post Eruptive 72-96 hrs']
