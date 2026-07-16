@@ -19,6 +19,7 @@ class Path:
         self.report = os.path.abspath(os.path.join(self.filesystem, 'report'))
         self.other = os.path.abspath(os.path.join(self.filesystem, 'other'))
         self.all_time_statistics_overview = os.path.abspath(os.path.join(self.other, 'all_time_statistics_overview.pkl'))
+        self.all_time_metrics = os.path.abspath(os.path.join(self.other, 'all_time_metrics.pkl'))
         self.email_storage = os.path.abspath(os.path.join(self.filesystem, 'email'))
         self.index = os.path.abspath(os.path.join(self.filesystem, 'index.html'))
         self.index_stylesheet = os.path.abspath(os.path.join(self.filesystem, 'styles.css'))
@@ -330,7 +331,24 @@ class Order:
         ]
 order = Order()
 
-exclude_models = ['SPRINTS Post Eruptive 24-48 hrs', 'SPRINTS Post Eruptive 48-72 hrs', 'SPRINTS Post Eruptive 72-96 hrs']
+exclude_models = ['SPRINTS Post Eruptive 24-48 hrs', 
+                  'SPRINTS Post Eruptive 48-72 hrs', 
+                  'SPRINTS Post Eruptive 72-96 hrs', 
+                  'SAWS-ASPECS 0-12 hrs 50%', 
+                  'SAWS-ASPECS 0-12 hrs 90%', 
+                  'SAWS-ASPECS 0-24 hrs 50%', 
+                  'SAWS-ASPECS 0-24 hrs 90%', 
+                  'SAWS-ASPECS 0-48 hrs 50%', 
+                  'SAWS-ASPECS 0-48 hrs 90%',
+                  'SAWS-ASPECS 0-6 hrs 50%', 
+                  'SAWS-ASPECS 0-6 hrs 90%',
+                  'SAWS-ASPECS 0-72 hrs 50%',
+                  'SAWS-ASPECS 0-72 hrs 50%',
+                  'SAWS-ASPECS nowcast 50%',
+                  'SAWS-ASPECS nowcast 90%',
+                  'SEPSTER2D CME',
+                  'ZEUS+iPATH Flare'
+                 ]
 
 # CAREFUL WITH THESE
 reset_all_time_df = False
