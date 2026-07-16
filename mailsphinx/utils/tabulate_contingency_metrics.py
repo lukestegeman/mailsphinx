@@ -18,6 +18,20 @@ _NE_ABBREVIATIONS = {
     'Trigger associated with observed SEP but SEP not in prediction window':  'TSPW',
 }
 
+# OUTCOME ASSOCIATED WITH EACH NOT-EVALUATED MATCH STATUS ABBREVIATION.
+# "CLEAR" MEANS THE FORECAST PREDICTED ALL CLEAR AND WAS EFFECTIVELY CORRECT.
+# "NOT CLEAR" MEANS THE FORECAST PREDICTED AN EVENT.
+# "NOT EVALUATED" MEANS THE FORECAST COULD NOT BE SCORED.
+_NE_OUTCOMES = {
+    'OSE':   'Not Evaluated',
+    'NSE':   'Clear',
+    'TNS':   'Clear',
+    'SE':    'Not Clear',
+    'NSE-S': 'Clear',
+    'TIA':   'Not Evaluated',
+    'TSPW':  'Not Evaluated',
+}
+
 
 def build_single_stat_contingency_table(df, mode, header):
     if mode == 'hit':
@@ -175,13 +189,18 @@ def build_contingency_table_data(df, header, mode='all',
 
 
 def _build_ne_legend():
-    headers = ['Abbreviation', 'Match Status']
-    table_data = [[abbrev, full] for full, abbrev in _NE_ABBREVIATIONS.items()]
+    """Build a legend table mapping abbreviations to full match status names
+    and their associated forecast outcome."""
+    headers = ['Abbreviation', 'Match Status', 'Outcome']
+    table_data = [
+        [abbrev, full, _NE_OUTCOMES[abbrev]]
+        for full, abbrev in _NE_ABBREVIATIONS.items()
+    ]
     return build_html.build_table(headers, table_data)
 
 
 def build_all_clear_contingency_table(df, week_start, week_end):
-    """Build All Clear Contingency Tables and Not Evaluated Breakdown,
+    """Build All Clear Contingency Tables and Evaluation Breakdown,
     with one sub-table per (energy channel, threshold) pair."""
     text = build_html.build_paragraph_title('All Clear Contingency Tables')
     text += build_html.build_regular_text(
@@ -201,7 +220,7 @@ def build_all_clear_contingency_table(df, week_start, week_end):
     ne_abbrev_list = list(_NE_ABBREVIATIONS.values())
     breakdown_headers = ['Model Category', 'Model Flavor'] + ne_abbrev_list
 
-    # COLLECT NOT-EVALUATED BREAKDOWN TABLES TO RENDER AFTER ALL CONTINGENCY TABLES
+    # COLLECT EVALUATION BREAKDOWN TABLES TO RENDER AFTER ALL CONTINGENCY TABLES
     breakdown_sections = []
 
     for energy_key, threshold_key in config.order.energy_channel_threshold_order:
@@ -230,10 +249,10 @@ def build_all_clear_contingency_table(df, week_start, week_end):
 
         breakdown_sections.append((label, breakdown_table_data))
 
-    # NOT-EVALUATED BREAKDOWN SECTION
-    text += build_html.build_paragraph_title('Not Evaluated Breakdown')
+    # EVALUATION BREAKDOWN SECTION
+    text += build_html.build_paragraph_title('Evaluation Breakdown')
     text += build_html.build_regular_text(
-        "Counts of not-evaluated forecasts by match status reason. "
+        "Counts of unevaluated forecasts by match status reason. "
         "Values are in the form X (+Y) as above.")
     text += _build_ne_legend()
 
