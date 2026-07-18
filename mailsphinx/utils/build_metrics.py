@@ -286,9 +286,24 @@ def build_metrics_section(df):
     buf.write(build_html.build_regular_text(
         'Values shown as X (+/-Y), where X is the all-time metric and '
         'Y is the change since the previous report. All metrics are '
-        'taken directly from sphinxval. '
-        'MLE = Median Log Error. WF2/WF10 = percentage of forecasts '
-        'within a factor of 2/10 (order of magnitude) of observed.'))
+        'taken directly from sphinxval.'))
+
+    # METRICS LEGEND
+    legend_headers = ['Abbreviation', 'Full Name', 'Description']
+    legend_data = [
+        ['Hit Rate',     'Hit Rate (Probability of Detection)',  'Fraction of observed SEP events that were correctly predicted. Range: [0, 1]; higher is better.'],
+        ['FAR',          'False Alarm Ratio',                    'Fraction of predicted SEP events that did not occur. Range: [0, 1]; lower is better.'],
+        ['FAER',         'False Alarm Event Ratio',              'Number of false alarms divided by number of observed SEP events. Range: [0, &infin;); lower is better.'],
+        ['HSS',          'Heidke Skill Score',                   'Skill relative to random chance. Range: (-&infin;, 1]; higher is better; 0 = no skill.'],
+        ['TSS',          'True Skill Statistic',                 'Hit Rate minus False Alarm Rate. Range: [-1, 1]; higher is better; 0 = no skill.'],
+        ['Brier Score',  'Brier Score',                          'Mean squared error of probability forecasts. Range: [0, 1]; lower is better.'],
+        ['AUC',          'Area Under ROC Curve',                 'Ability to discriminate between events and non-events. Range: [0, 1]; higher is better; 0.5 = no skill.'],
+        ['MLE',          'Median Log Error',                     'Median of log&#8321;&#8320;(predicted/observed) peak flux. 0 = perfect; positive = overprediction; negative = underprediction.'],
+        ['WF2',          'Within Factor of 2',                   'Percentage of forecasts within a factor of 2 of the observed peak flux. Higher is better.'],
+        ['WF10',         'Within Factor of 10',                  'Percentage of forecasts within an order of magnitude of the observed peak flux. Higher is better.'],
+    ]
+    buf.write(build_html.build_table(legend_headers, legend_data))
+    buf.write(build_html.build_divider())
 
     ac_metrics = ['Hit Rate', 'FAR', 'FAER', 'HSS', 'TSS']
     ac_headers = ['Model Category', 'Model Flavor'] + ac_metrics

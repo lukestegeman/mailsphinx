@@ -31,6 +31,11 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
     text += build_html.build_paragraph_title('SEP All Clear Contingency Timelines')
     counter = 0
     for energy_key, energy_group in weekly_df.groupby('Energy Channel Key'):
+        # SKIP THIS ENERGY CHANNEL ENTIRELY IF NONE OF ITS THRESHOLD KEYS
+        # ARE IN THE CONFIGURED LIST — AVOIDS RENDERING AN EMPTY HEADING.
+        if not any(_is_configured_channel(energy_key, tk)
+                   for tk in energy_group['Threshold Key'].unique()):
+            continue
         energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
         if energy_group['Energy Channel Key'].eq(energy_key).any():
             text += build_html.build_paragraph_title(energy_channel_string, sublevel=1)
@@ -54,6 +59,9 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
         counter = 0
         text += build_html.build_paragraph_title('Advanced Warning Time Comparison')
         for energy_key, energy_group in weekly_df.groupby('Energy Channel Key'):
+            if not any(_is_configured_channel(energy_key, tk)
+                       for tk in energy_group['Threshold Key'].unique()):
+                continue
             energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
             if energy_group['Energy Channel Key'].eq(energy_key).any():
                 energy_reached = True
