@@ -20,16 +20,13 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, thresh
     color_counter = 0
     plot_exists = False
     figure_created = False
+    # TRACK GLOBAL BOUNDS ACROSS ALL MODEL CATEGORIES
     min_predicted_peak = 1.0e+99
     max_predicted_peak = 0.0
     min_observed_peak = 1.0e+99
     max_observed_peak = 0.0
     handles = []
     for model_category, group in df.groupby('Model Category'):
-        min_predicted_peak = 1.0e+99
-        max_predicted_peak = 0.0
-        min_observed_peak = 1.0e+99
-        max_observed_peak = 0.0
         onset_peak_group = group[['Predicted SEP Peak Intensity (Onset Peak)', 'Observed SEP Peak Intensity (Onset Peak)']].dropna()
         max_flux_group = group[['Predicted SEP Peak Intensity Max (Max Flux)', 'Observed SEP Peak Intensity Max (Max Flux)']].dropna()
         is_onset_peak_empty = (filter_objects.is_column_empty(onset_peak_group, 'Predicted SEP Peak Intensity (Onset Peak)')) or (filter_objects.is_column_empty(onset_peak_group, 'Observed SEP Peak Intensity (Onset Peak)'))
@@ -70,18 +67,27 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, thresh
                 color_counter += 1
 
     if plot_exists:
-        min_predicted_peak = min_predicted_peak / 2
-        min_observed_peak = min_observed_peak / 2
-        max_predicted_peak = max_predicted_peak * 2
-        max_observed_peak = max_observed_peak * 2
-        min_peak = min(min_predicted_peak, min_observed_peak)
-        max_peak = max(max_predicted_peak, max_observed_peak)
+        # GUARD AGAINST UNINITIALIZED BOUNDS (NO VALID PAIRED DATA FOUND)
+        if min_predicted_peak >= 1.0e+98 or min_observed_peak >= 1.0e+98:
+            plt.close()
+            return False
 
-        plt.plot([min_peak, max_peak], [min_peak, max_peak], color='black', linestyle='--')
+        import math
+        # CENTER THE AXES ON (THRESHOLD, THRESHOLD) IN LOG SPACE WITH A
+        # FIXED ±3 DECADE RANGE SO THE PLOT IS ALWAYS A READABLE SQUARE.
+        log_thresh = math.log10(threshold_flux)
+        decades = 3.0
+        axis_min = 10 ** (log_thresh - decades)
+        axis_max = 10 ** (log_thresh + decades)
+
+        plt.plot([axis_min, axis_max], [axis_min, axis_max],
+                 color='black', linestyle='--', zorder=0)
         title = energy_channel_string + ', ' + threshold_flux_string
         color_key = title.replace('> ', '>=') + ' Event'
-        plt.plot([threshold_flux, threshold_flux], [min_peak, max_peak], color=config.color.associations[color_key], linestyle='solid')
-        plt.plot([min_peak, max_peak], [threshold_flux, threshold_flux], color=config.color.associations[color_key], linestyle='solid')
+        plt.plot([threshold_flux, threshold_flux], [axis_min, axis_max],
+                 color=config.color.associations[color_key], linestyle='solid', zorder=0)
+        plt.plot([axis_min, axis_max], [threshold_flux, threshold_flux],
+                 color=config.color.associations[color_key], linestyle='solid', zorder=0)
 
         plt.grid(True, which='major', linestyle='--', linewidth=0.5, alpha=0.7)
         plt.title(title)
@@ -89,10 +95,11 @@ def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, thresh
         plt.ylabel('Predicted Peak Flux [pfu]')
         plt.xscale('log')
         plt.yscale('log')
-        plt.xlim([min_observed_peak, max_observed_peak])
-        plt.ylim([min_predicted_peak, max_predicted_peak])
+        plt.xlim([axis_min, axis_max])
+        plt.ylim([axis_min, axis_max])
         if handles:
-            plt.legend(handles=handles, loc='upper left', framealpha=config.plot.opacity, fontsize='small')
+            plt.legend(handles=handles, loc='upper left',
+                       framealpha=config.plot.opacity, fontsize='small')
         plt.tight_layout()
         plt.savefig(save, dpi=config.image.dpi, bbox_inches=0)
         plt.close()
