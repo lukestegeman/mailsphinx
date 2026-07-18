@@ -64,9 +64,9 @@ _FLUX_METRICS = [
     ('WF10', 'Percentage within an Order of Magnitude (%)'),
 ]
 _FLUX_SECTIONS = [
-    (_SECTION_ONSET_PEAK,  'Onset Peak',              'peak_intensity_metrics.pkl'),
-    (_SECTION_MAX_FLUX,    'Max Flux',                'peak_intensity_max_metrics.pkl'),
-    (_SECTION_PRED_WINDOW, 'Max Flux in Pred Window', 'max_flux_in_pred_win_metrics.pkl'),
+    (_SECTION_ONSET_PEAK,  'Onset Peak',              'peak_intensity_metrics.pkl',         'Onset Peak Flux Metrics'),
+    (_SECTION_MAX_FLUX,    'Max Flux',                'peak_intensity_max_metrics.pkl',      'Max Flux Metrics'),
+    (_SECTION_PRED_WINDOW, 'Max Flux in Pred Window', 'max_flux_in_pred_win_metrics.pkl',    None),  # SUPPRESSED
 ]
 
 
@@ -190,7 +190,7 @@ def _compute_model_metrics(df):
     ac_df   = _load_sphinxval_metrics('all_clear_metrics.pkl')
     prob_df = _load_sphinxval_metrics('probability_metrics.pkl')
     flux_dfs = {label: _load_sphinxval_metrics(fname)
-                for _, label, fname in _FLUX_SECTIONS}
+                for _, label, fname, _ in _FLUX_SECTIONS}
 
     results = {}
     for energy_key, threshold_key in config.order.energy_channel_threshold_order:
@@ -214,7 +214,7 @@ def _compute_model_metrics(df):
                 for label, col in _PROB_METRICS:
                     metrics[label] = _sphinxval_metric(
                         prob_df, model_name, energy_key, threshold_key, col)
-                for _, flux_label, _ in _FLUX_SECTIONS:
+                for _, flux_label, _, _ in _FLUX_SECTIONS:
                     for label, col in _FLUX_METRICS:
                         metrics[f'{label} ({flux_label})'] = _sphinxval_metric(
                             flux_dfs[flux_label], model_name, energy_key, threshold_key, col)
@@ -302,12 +302,14 @@ def build_metrics_section(df):
         current, previous, prob_metrics, _SECTION_PROBABILITY,
         'Probability Metrics', prob_headers, metrics_config))
 
-    for section_key, flux_label, _ in _FLUX_SECTIONS:
+    for section_key, flux_label, _, display_title in _FLUX_SECTIONS:
+        if display_title is None:
+            continue  # SUPPRESSED SECTION
         flux_metrics = [f'MLE ({flux_label})', f'WF2 ({flux_label})', f'WF10 ({flux_label})']
         flux_headers = ['Model Category', 'Model Flavor', 'MLE', 'WF2', 'WF10']
         buf.write(_build_metrics_section_tables(
             current, previous, flux_metrics, section_key,
-            f'Max Flux Metrics ({flux_label})', flux_headers, metrics_config))
+            display_title, flux_headers, metrics_config))
 
     buf.write(build_html.build_divider())
     return buf.getvalue()

@@ -94,11 +94,8 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
             threshold_flux_string = manipulate_keys.convert_threshold_key_to_string(subname)
             threshold_flux = float(threshold_flux_string.lstrip('> ').rstrip(' pfu'))
             is_onset_peak_empty = (filter_objects.is_column_empty(subgroup, 'Predicted SEP Peak Intensity (Onset Peak)')) or (filter_objects.is_column_empty(subgroup, 'Observed SEP Peak Intensity (Onset Peak)'))
-            is_predicted_max_flux_empty = filter_objects.is_column_empty(subgroup, 'Predicted SEP Peak Intensity Max (Max Flux)')
-
-            is_max_flux_empty = (is_predicted_max_flux_empty) or (filter_objects.is_column_empty(subgroup, 'Observed SEP Peak Intensity Max (Max Flux)'))
-            is_max_flux_in_prediction_window_empty = (is_predicted_max_flux_empty) or filter_objects.is_column_empty(subgroup, 'Observed Max Flux in Prediction Window')
-            if is_onset_peak_empty and is_max_flux_empty and is_max_flux_in_prediction_window_empty:
+            is_max_flux_empty = (filter_objects.is_column_empty(subgroup, 'Predicted SEP Peak Intensity Max (Max Flux)')) or (filter_objects.is_column_empty(subgroup, 'Observed SEP Peak Intensity Max (Max Flux)'))
+            if is_onset_peak_empty and is_max_flux_empty:
                 plot_exists = False
             else:
                 plot_path = os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg')
@@ -108,11 +105,6 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                 if at_least_one_plot:
                     at_least_one_plot = False
                     text += build_html.build_paragraph_title('Predicted Peak Flux vs. Observed Peak Flux')
-                    build_legend.build_legend_peak_flux_separate()
-                    text += build_html.build_image(os.path.join(config.path.email_image, 'legend-peak-flux.jpg'), write_as_base64=convert_images_to_base64)
                 text += plot_text
     text += build_html.build_divider()
     return text
-
-
-

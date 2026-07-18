@@ -105,6 +105,7 @@ class Color:
                              'Divider'                 : '#d92906',
                              'Eruption Out of Range'   : '#000000',
                              'Trigger/Input after Observed Phenomenon' : '#000000',
+                             'Trigger associated with observed SEP but not in prediction window' : '#000000',
                              'No Matching Threshold' : '#000000',
                              'Ongoing SEP Event' : '#000000',
                              'Unmatched' : '#000000',
@@ -158,6 +159,7 @@ class Shape:
                              'No SEP Event' : 's',
                              'Eruption Out of Range' : 'X',
                              'Trigger/Input after Observed Phenomenon': 'd',
+                             'Trigger associated with observed SEP but not in prediction window' : 'd',
                              'No Matching Threshold' : '*', 
                              'Ongoing SEP Event' : '>',
                              'Unmatched' : '2',
@@ -315,25 +317,23 @@ class Order:
                                  'min.500.0.max.-1.0.units.MeV'
                                 ]
         # ORDERED LIST OF (ENERGY_CHANNEL_KEY, THRESHOLD_KEY) PAIRS TO
-        # INCLUDE IN MAILSPHINX TABLES. REMOVE AN ENTRY TO EXCLUDE THAT
-        # CHANNEL/THRESHOLD COMBINATION FROM ALL TABLES AND METRICS.
-        # THE REleASE MISMATCH KEY IS LISTED SEPARATELY FROM THE STANDARD
-        # >10 MeV KEY SINCE SPHINX TREATS THEM AS DISTINCT CHANNELS.
+        # INCLUDE IN MAILSPHINX TABLES AND METRICS. REMOVE AN ENTRY TO
+        # EXCLUDE THAT CHANNEL/THRESHOLD FROM ALL TABLES AND METRICS.
+        # REleASE MISMATCH KEYS ARE AUTOMATICALLY GROUPED UNDER THEIR
+        # BASE CHANNEL (>10 MeV) VIA KEY NORMALIZATION AT RUNTIME.
         self.energy_channel_threshold_order = [
             ('min.10.0.max.-1.0.units.MeV',
              'threshold.10.0.units.1 / (cm2 s sr)'),
-            ('min.30.0.max.-1.0.units.MeV',
-             'threshold.1.0.units.1 / (cm2 s sr)'),
-            ('min.50.0.max.-1.0.units.MeV',
-             'threshold.1.0.units.1 / (cm2 s sr)'),
+            #('min.30.0.max.-1.0.units.MeV',
+            # 'threshold.1.0.units.1 / (cm2 s sr)'),
+            #('min.50.0.max.-1.0.units.MeV',
+            # 'threshold.1.0.units.1 / (cm2 s sr)'),
             ('min.100.0.max.-1.0.units.MeV',
              'threshold.1.0.units.1 / (cm2 s sr)'),
         ]
 order = Order()
 
-exclude_models = ['SPRINTS Post Eruptive 24-48 hrs', 
-                  'SPRINTS Post Eruptive 48-72 hrs', 
-                  'SPRINTS Post Eruptive 72-96 hrs', 
+exclude_models = ['SPRINTS Post Eruptive 72-96 hrs', 
                   'SAWS-ASPECS 0-12 hrs 50%', 
                   'SAWS-ASPECS 0-12 hrs 90%', 
                   'SAWS-ASPECS 0-24 hrs 50%', 
@@ -343,11 +343,13 @@ exclude_models = ['SPRINTS Post Eruptive 24-48 hrs',
                   'SAWS-ASPECS 0-6 hrs 50%', 
                   'SAWS-ASPECS 0-6 hrs 90%',
                   'SAWS-ASPECS 0-72 hrs 50%',
-                  'SAWS-ASPECS 0-72 hrs 50%',
+                  'SAWS-ASPECS 0-72 hrs 90%',
                   'SAWS-ASPECS nowcast 50%',
                   'SAWS-ASPECS nowcast 90%',
+                  'SAWS-ASPECS 50%',
+                  'SAWS-ASPECS 90%',
                   'SEPSTER2D CME',
-                  'ZEUS+iPATH Flare'
+                  'ZEUS+iPATH_Flare'
                  ]
 
 # CAREFUL WITH THESE

@@ -1,3 +1,4 @@
+from ..utils import build_evaluation_breakdown
 from ..utils import build_event
 from ..utils import build_html
 from ..utils import build_metrics
@@ -81,8 +82,10 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         events, _ = build_event.get_unique_events(event_forecasts)
         if event:
             html += build_event.build_event_section(event_forecasts, end_datetime)
-        html += tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, start_datetime, end_datetime)
-        html += build_metrics.build_metrics_section(sphinx_df)
+        contingency_html, breakdown_sections = tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, start_datetime, end_datetime)
+        html += contingency_html
         html += build_space_weather_summary.build_space_weather_summary(start_datetime=start_datetime, end_datetime=end_datetime, convert_image_to_base64=convert_images_to_base64)
         html += build_model.build_model_section(sphinx_df, weekly_forecasts, start_datetime, end_datetime, events, convert_images_to_base64)
+        html += build_metrics.build_metrics_section(sphinx_df)
+        html += build_evaluation_breakdown.build_evaluation_breakdown(breakdown_sections)
     return html

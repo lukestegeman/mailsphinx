@@ -28,7 +28,6 @@ def build_legend_peak_flux_separate():
 def build_legend_peak_flux():
     legend_labels = ['Onset Peak',
                      'Max Flux',
-                     'Max Flux in Prediction Window',
                     ]
     legend_markers = []
     legend_colors = []

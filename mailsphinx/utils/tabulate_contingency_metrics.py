@@ -1,4 +1,5 @@
 from ..utils import build_html
+from ..utils import build_evaluation_breakdown as _eb
 from ..utils import config
 from ..utils import format_objects
 from ..utils import manipulate_keys
@@ -6,31 +7,8 @@ from ..utils import manipulate_keys
 import numpy as np
 import os
 
-# ABBREVIATED LABELS FOR NOT-EVALUATED MATCH STATUSES USED IN THE
-# BREAKDOWN TABLE. FULL NAMES ARE SHOWN IN THE LEGEND ABOVE THE TABLE.
-_NE_ABBREVIATIONS = {
-    'Ongoing SEP Event':                                                      'OSE',
-    'No SEP Event':                                                           'NSE',
-    'Trigger not associated with observed SEP':                               'TNS',
-    'SEP Event':                                                              'SE',
-    'No SEP Event (SubEvent)':                                                'NSE-S',
-    'Trigger/Input after Observed Phenomenon':                                'TIA',
-    'Trigger associated with observed SEP but SEP not in prediction window':  'TSPW',
-}
-
-# OUTCOME ASSOCIATED WITH EACH NOT-EVALUATED MATCH STATUS ABBREVIATION.
-# "CLEAR" MEANS THE FORECAST PREDICTED ALL CLEAR AND WAS EFFECTIVELY CORRECT.
-# "NOT CLEAR" MEANS THE FORECAST PREDICTED AN EVENT.
-# "NOT EVALUATED" MEANS THE FORECAST COULD NOT BE SCORED.
-_NE_OUTCOMES = {
-    'OSE':   'Not Evaluated',
-    'NSE':   'Clear',
-    'TNS':   'Clear',
-    'SE':    'Not Clear',
-    'NSE-S': 'Clear',
-    'TIA':   'Not Evaluated',
-    'TSPW':  'Not Evaluated',
-}
+# USE NE_ABBREVIATIONS FROM build_evaluation_breakdown — SINGLE SOURCE OF TRUTH
+_NE_ABBREVIATIONS = _eb.NE_ABBREVIATIONS
 
 
 def build_single_stat_contingency_table(df, mode, header):
@@ -188,20 +166,18 @@ def build_contingency_table_data(df, header, mode='all',
     return table_data, table_color_dict, table_text_color_dict, breakdown_table_data
 
 
-def _build_ne_legend():
-    """Build a legend table mapping abbreviations to full match status names
-    and their associated forecast outcome."""
-    headers = ['Abbreviation', 'Match Status', 'Outcome']
-    table_data = [
-        [abbrev, full, _NE_OUTCOMES[abbrev]]
-        for full, abbrev in _NE_ABBREVIATIONS.items()
-    ]
-    return build_html.build_table(headers, table_data)
-
-
 def build_all_clear_contingency_table(df, week_start, week_end):
-    """Build All Clear Contingency Tables and Evaluation Breakdown,
-    with one sub-table per (energy channel, threshold) pair."""
+    """Build All Clear Contingency Tables, one sub-table per
+    (energy channel, threshold) pair.
+
+    Returns
+    -------
+    text : str
+        HTML for the contingency tables.
+    breakdown_sections : list of (label, breakdown_table_data)
+        Breakdown data per channel, for passing to
+        build_evaluation_breakdown.build_evaluation_breakdown().
+    """
     text = build_html.build_paragraph_title('All Clear Contingency Tables')
     text += build_html.build_regular_text(
         "Values are given in the form X (+Y), where X is the all-time quantity, "
@@ -217,15 +193,10 @@ def build_all_clear_contingency_table(df, week_start, week_end):
         config.color.associations['Correct Negatives'],
         None, None, None,
     ]))
-    ne_abbrev_list = list(_NE_ABBREVIATIONS.values())
-    breakdown_headers = ['Model Category', 'Model Flavor'] + ne_abbrev_list
 
-    # COLLECT EVALUATION BREAKDOWN TABLES TO RENDER AFTER ALL CONTINGENCY TABLES
     breakdown_sections = []
 
     for energy_key, threshold_key in config.order.energy_channel_threshold_order:
-        # FILTER TO THIS ENERGY/THRESHOLD PAIR. NORMALIZE THE ENERGY CHANNEL
-        # KEY SO THAT REleASE MISMATCH KEYS ARE GROUPED UNDER THEIR BASE CHANNEL.
         channel_mask = (
             (df['Energy Channel Key'].apply(_normalize_energy_key) == energy_key) &
             (df['Threshold Key'] == threshold_key)
@@ -249,20 +220,19 @@ def build_all_clear_contingency_table(df, week_start, week_end):
 
         breakdown_sections.append((label, breakdown_table_data))
 
-    # EVALUATION BREAKDOWN SECTION
-    text += build_html.build_paragraph_title('Evaluation Breakdown')
-    text += build_html.build_regular_text(
-        "Counts of unevaluated forecasts by match status reason. "
-        "Values are in the form X (+Y) as above.")
-    text += _build_ne_legend()
-
-    for label, breakdown_table_data in breakdown_sections:
-        if breakdown_table_data:
-            text += build_html.build_paragraph_title(label, sublevel=1)
-            text += build_html.build_table(breakdown_headers, breakdown_table_data)
+    # ADD A SINGLE FOOTNOTE IF REleASE MODELS ARE PRESENT ANYWHERE IN THE DATA.
+    has_release = df['Model'].str.contains('REleASE', case=False, na=False).any()
+    if has_release:
+        text += build_html.build_regular_text(
+            '<em>Note on HESPERIA REleASE:</em> REleASE forecasts are issued for '
+            '15.8&#8209;39&nbsp;MeV protons exceeding 0.1&nbsp;pfu/MeV, but are '
+            'validated here against &gt;10&nbsp;MeV protons exceeding 10&nbsp;pfu. '
+            'Predicted peak fluxes from REleASE may be correlated with observed values '
+            'but are not expected to match numerically, as they represent different '
+            'energy channels and units.')
 
     text += build_html.build_divider()
-    return text
+    return text, breakdown_sections
 
 
 def build_false_alarm_table(df):
