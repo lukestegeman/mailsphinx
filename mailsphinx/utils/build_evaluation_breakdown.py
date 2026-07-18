@@ -29,13 +29,13 @@ NE_ABBREVIATIONS = {
 
 # OUTCOME ASSOCIATED WITH EACH NOT-EVALUATED MATCH STATUS ABBREVIATION.
 NE_OUTCOMES = {
-    'OSE':   'Not Evaluated',
-    'NSE':   'Clear',
-    'TNS':   'Clear',
-    'SE':    'Not Clear',
-    'NSE-S': 'Clear',
-    'TIA':   'Not Evaluated',
-    'TSPW':  'Not Evaluated',
+    'OSE':   'Forecast not evaluated',
+    'NSE':   'No observed SEP event/Clear',
+    'TNS':   'No observed SEP event/Clear',
+    'SE':    'Observed SEP event/Not Clear',
+    'NSE-S': 'Observed SEP event below threshold/Clear',
+    'TIA':   'Forecast not evaluated',
+    'TSPW':  'Forecast not evaluated',
 }
 
 
