@@ -100,7 +100,7 @@ def _is_excluded(metrics_config, section, cat, flav):
 # -----------------------------------------------------------------------
 
 def _metrics_dir():
-    return '/data/SPHINX/cumulative_metrics'
+    return '/home/m_sphinx/test_reqs/sphinxval/pushvivid_data/cumulative_metrics'
 
 
 def _load_sphinxval_metrics(filename):
