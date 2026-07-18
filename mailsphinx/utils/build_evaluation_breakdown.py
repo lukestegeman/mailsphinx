@@ -42,7 +42,7 @@ NE_OUTCOMES = {
 def build_ne_legend():
     """Build a legend table mapping abbreviations to full match status
     names and their associated forecast outcome."""
-    headers = ['Abbreviation', 'Match Status', 'Outcome']
+    headers = ['Abbreviation', 'Forecast-Observation Match Status', 'Outcome']
     table_data = [
         [abbrev, full, NE_OUTCOMES[abbrev]]
         for full, abbrev in NE_ABBREVIATIONS.items()
