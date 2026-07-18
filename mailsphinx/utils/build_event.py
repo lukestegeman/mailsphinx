@@ -10,11 +10,22 @@ import pandas as pd
 # BUILD EVENT SECTION
 def check_for_event(df, start_datetime, end_datetime):
     df['Observed SEP Threshold Crossing Time'] = df['Observed SEP Threshold Crossing Time'].fillna(pd.NaT)
-    event_forecasts = df[(df['Observed SEP All Clear'] == False) & (df['Observed SEP Threshold Crossing Time'] >= start_datetime) & (df['Observed SEP Threshold Crossing Time'] < end_datetime)]
-    if len(event_forecasts) > 0:
-        event = True
-    else:
-        event = False 
+    event_forecasts = df[
+        (df['Observed SEP All Clear'] == False) &
+        (df['Observed SEP Threshold Crossing Time'] >= start_datetime) &
+        (df['Observed SEP Threshold Crossing Time'] < end_datetime)
+    ]
+    # FILTER TO ONLY ENERGY CHANNEL / THRESHOLD PAIRS CONFIGURED FOR DISPLAY.
+    # NORMALIZE ENERGY KEY TO STRIP REleASE MISMATCH SUFFIXES BEFORE COMPARING.
+    configured = set(config.order.energy_channel_threshold_order)
+    def _norm(key):
+        return key.split('_min.')[0]
+    event_forecasts = event_forecasts[
+        event_forecasts.apply(
+            lambda r: (_norm(r['Energy Channel Key']), r['Threshold Key']) in configured,
+            axis=1)
+    ]
+    event = len(event_forecasts) > 0
     return event_forecasts, event 
 
 def build_ccmc_scoreboard_links(event_forecasts, end_datetime):

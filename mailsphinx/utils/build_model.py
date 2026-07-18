@@ -13,6 +13,17 @@ import numpy as np
 import os
 
 
+def _norm_energy_key(key):
+    """Strip REleASE mismatch suffix for channel comparison."""
+    return key.split('_min.')[0]
+
+
+def _is_configured_channel(energy_key, threshold_key):
+    """Return True if this (energy, threshold) pair is in the configured list."""
+    norm = _norm_energy_key(energy_key)
+    return (norm, threshold_key) in set(config.order.energy_channel_threshold_order)
+
+
 def build_model_section(df, weekly_df, week_start, week_end, events, convert_images_to_base64=False):
     text = build_html.build_section_title('Model Performance')
 
@@ -20,12 +31,14 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
     text += build_html.build_paragraph_title('SEP All Clear Contingency Timelines')
     counter = 0
     for energy_key, energy_group in weekly_df.groupby('Energy Channel Key'):
-        energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key) 
+        energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
         if energy_group['Energy Channel Key'].eq(energy_key).any():
             text += build_html.build_paragraph_title(energy_channel_string, sublevel=1)
             for model_category, group in energy_group.groupby('Model Category'):
                 for model_flavor, subgroup in group.groupby('Model Flavor'):
                     for threshold_key, subsubgroup in subgroup.groupby('Threshold Key'):
+                        if not _is_configured_channel(energy_key, threshold_key):
+                            continue
                         filtered_events = events[(events['Energy Channel Key'] == energy_key) & (events['Threshold Key'] == threshold_key)]
                         threshold_string = manipulate_keys.convert_threshold_key_to_string(threshold_key)
                         if model_flavor == '':
@@ -41,10 +54,12 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
         counter = 0
         text += build_html.build_paragraph_title('Advanced Warning Time Comparison')
         for energy_key, energy_group in weekly_df.groupby('Energy Channel Key'):
-            energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key) 
+            energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
             if energy_group['Energy Channel Key'].eq(energy_key).any():
                 energy_reached = True
                 for threshold_key, group in energy_group.groupby('Threshold Key'):
+                    if not _is_configured_channel(energy_key, threshold_key):
+                        continue
                     filtered_events = events[(events['Energy Channel Key'] == energy_key) & (events['Threshold Key'] == threshold_key)]
                     for event_key, event_group in filtered_events.groupby('Observed SEP Threshold Crossing Time'):
                         if energy_reached:
@@ -58,6 +73,9 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
     text += build_html.build_paragraph_title('SEP Probability Timelines')
     counter = 0
     for energy_key, energy_group in weekly_df.groupby('Energy Channel Key'):
+        if not any(_is_configured_channel(energy_key, tk)
+                   for tk in energy_group['Threshold Key'].unique()):
+            continue
         energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
         if not filter_objects.is_column_empty(energy_group, 'Predicted SEP Probability'):
             text += build_html.build_paragraph_title(energy_channel_string, sublevel=1)
@@ -69,7 +87,6 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                     for model_flavor in unique_model_flavors:
                         if not filter_objects.is_column_empty(group[group['Model Flavor'] == model_flavor], 'Predicted SEP Probability'):
                             unique_model_flavors_with_probability.append(model_flavor)
-
                     need_legend = len(unique_model_flavors_with_probability) > 1
                     if not need_legend:
                         subname = ' ' + unique_model_flavors[0]
@@ -79,18 +96,13 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                     counter += 1
 
     # MAKE PREDICTED PEAK FLUX VS. OBSERVED PEAK FLUX
-    # DETERMINE MIN/MAX VALUES
-    # IMPORTANT VALUES
-    # Observed SEP Peak Intensity (Onset Peak)
-    # Observed SEP Peak Intensity Max (Max Flux)
-    # Observed Max Flux in Prediction Window
-    # Predicted SEP Peak Intensity (Onset Peak)
-    # Predicted SEP Peak Intensity Max (Max Flux)
     counter = 0
     at_least_one_plot = True
     for name, group in weekly_df.groupby('Energy Channel Key'):
-        energy_channel_string = manipulate_keys.convert_energy_key_to_string(name)
         for subname, subgroup in group.groupby('Threshold Key'):
+            if not _is_configured_channel(name, subname):
+                continue
+            energy_channel_string = manipulate_keys.convert_energy_key_to_string(name)
             threshold_flux_string = manipulate_keys.convert_threshold_key_to_string(subname)
             threshold_flux = float(threshold_flux_string.lstrip('> ').rstrip(' pfu'))
             is_onset_peak_empty = (filter_objects.is_column_empty(subgroup, 'Predicted SEP Peak Intensity (Onset Peak)')) or (filter_objects.is_column_empty(subgroup, 'Observed SEP Peak Intensity (Onset Peak)'))
