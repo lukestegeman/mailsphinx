@@ -25,7 +25,7 @@ def _is_configured_channel(energy_key, threshold_key):
 
 
 def build_model_section(df, weekly_df, week_start, week_end, events, convert_images_to_base64=False):
-    text = build_html.build_section_title('Model Performance')
+    text = build_html.build_section_title('Model Performance Timelines')
 
     # MAKE CONTINGENCY TIMELINES
     text += build_html.build_paragraph_title('SEP All Clear Contingency Timelines')

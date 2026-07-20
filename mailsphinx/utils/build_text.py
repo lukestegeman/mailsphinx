@@ -84,7 +84,7 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
             'Overview',
             'All Clear Contingency Tables',
             'Space Weather Summary',
-            'Model Performance',
+            'Model Performance Timelines',
             'Metrics Summary',
             'Evaluation Breakdown',
         ]
