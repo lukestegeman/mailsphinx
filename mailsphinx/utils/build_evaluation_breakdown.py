@@ -69,7 +69,7 @@ def build_evaluation_breakdown(breakdown_sections):
 
     text = build_html.build_section_title('Evaluation Breakdown')
     text += build_html.build_regular_text(
-        "Counts of unevaluated forecasts by match status reason. "
+        "Counts of forecasts by match status reason for traceability. "
         "Values are in the form X (+Y) as above.")
     text += build_ne_legend()
 
