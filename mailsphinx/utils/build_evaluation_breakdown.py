@@ -67,7 +67,7 @@ def build_evaluation_breakdown(breakdown_sections):
     ne_abbrev_list = list(NE_ABBREVIATIONS.values())
     breakdown_headers = ['Model Category', 'Model Flavor'] + ne_abbrev_list
 
-    text = build_html.build_paragraph_title('Evaluation Breakdown')
+    text = build_html.build_section_title('Evaluation Breakdown')
     text += build_html.build_regular_text(
         "Counts of unevaluated forecasts by match status reason. "
         "Values are in the form X (+Y) as above.")

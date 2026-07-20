@@ -178,7 +178,7 @@ def build_all_clear_contingency_table(df, week_start, week_end):
         Breakdown data per channel, for passing to
         build_evaluation_breakdown.build_evaluation_breakdown().
     """
-    text = build_html.build_paragraph_title('All Clear Contingency Tables')
+    text = build_html.build_section_title('All Clear Contingency Tables')
     text += build_html.build_regular_text(
         "Values are given in the form X (+Y), where X is the all-time quantity, "
         "and Y is the quantity added from this period's results. X is inclusive of Y.")
@@ -219,17 +219,6 @@ def build_all_clear_contingency_table(df, week_start, week_end):
                 table_text_color_dict=table_text_color_dict)
 
         breakdown_sections.append((label, breakdown_table_data))
-
-    # ADD A SINGLE FOOTNOTE IF REleASE MODELS ARE PRESENT ANYWHERE IN THE DATA.
-    has_release = df['Model'].str.contains('REleASE', case=False, na=False).any()
-    if has_release:
-        text += build_html.build_regular_text(
-            '<em>Note on HESPERIA REleASE:</em> REleASE forecasts are issued for '
-            '15.8&#8209;39&nbsp;MeV protons exceeding 0.1&nbsp;pfu/MeV, but are '
-            'validated here against &gt;10&nbsp;MeV protons exceeding 10&nbsp;pfu. '
-            'Predicted peak fluxes from REleASE may be correlated with observed values '
-            'but are not expected to match numerically, as they represent different '
-            'energy channels and units.')
 
     text += build_html.build_divider()
     return text, breakdown_sections

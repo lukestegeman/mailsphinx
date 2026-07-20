@@ -120,7 +120,7 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
             else:
                 plot_path = os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg')
                 counter += 1
-                plot_exists, plot_text = plot_peak_flux.build_peak_flux_plot(energy_channel_string, threshold_flux_string, subgroup, plot_path, threshold_flux, convert_image_to_base64=convert_images_to_base64)
+                plot_exists, plot_text = plot_peak_flux.build_peak_flux_plot(energy_channel_string, threshold_flux_string, subgroup, plot_path, threshold_flux, all_time_df=df, convert_image_to_base64=convert_images_to_base64)
             if plot_exists:
                 if at_least_one_plot:
                     at_least_one_plot = False

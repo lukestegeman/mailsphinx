@@ -4,11 +4,40 @@ from ..utils import format_objects
 import datetime
 import os
 
+def _section_anchor(title):
+    """Convert a section title to a valid HTML anchor id."""
+    return title.lower().replace(' ', '-').replace('/', '-').replace('>', '').replace('<', '').replace(',', '').replace('(', '').replace(')', '')
+
+
 # BUILD HTML OBJECTS
 def build_section_title(title, base_indent=0):
-    text =  (base_indent + 0) * config.html.indent + '<div class="section_title">\n'
+    anchor = _section_anchor(title)
+    text =  (base_indent + 0) * config.html.indent + f'<div class="section_title"><a name="{anchor}"></a>\n'
     text += (base_indent + 1) * config.html.indent + '<p>' + title + '</p>\n'
     text += (base_indent + 0) * config.html.indent + '</div>\n'
+    return text
+
+
+def build_toc(sections, notes=None):
+    """Build a table of contents with jump links to each top-level section.
+
+    Parameters
+    ----------
+    sections : list of str
+        Section titles in order of appearance. Must match titles passed to
+        build_section_title() exactly so anchors resolve correctly.
+    notes : str or None
+        Optional notes text to display below the TOC links.
+    """
+    text = '<div class="section_title"><p>Contents</p></div>\n'
+    text += '<div class="regular_text"><ul>\n'
+    for title in sections:
+        anchor = _section_anchor(title)
+        text += f'  <li><a href="#{anchor}">{title}</a></li>\n'
+    text += '</ul>'
+    if notes:
+        text += f'<p>{notes}</p>'
+    text += '</div>\n'
     return text
 
 def build_paragraph_title(title, base_indent=0, sublevel=0):
@@ -164,9 +193,3 @@ def convert_image_to_base64(filename):
     with open(filename, 'rb') as a:
         string += base64.b64encode(a.read()).decode('utf-8')
     return string
-
-
-
-
-    
-

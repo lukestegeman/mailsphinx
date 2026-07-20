@@ -105,7 +105,7 @@ class Color:
                              'Divider'                 : '#d92906',
                              'Eruption Out of Range'   : '#000000',
                              'Trigger/Input after Observed Phenomenon' : '#000000',
-                             'Trigger associated with observed SEP but not in prediction window' : '#000000',
+                             'Trigger associated with observed SEP but SEP not in prediction window' : '#000000',
                              'No Matching Threshold' : '#000000',
                              'Ongoing SEP Event' : '#000000',
                              'Unmatched' : '#000000',
@@ -159,7 +159,7 @@ class Shape:
                              'No SEP Event' : 's',
                              'Eruption Out of Range' : 'X',
                              'Trigger/Input after Observed Phenomenon': 'd',
-                             'Trigger associated with observed SEP but not in prediction window' : 'd',
+                             'Trigger associated with observed SEP but SEP not in prediction window' : 'd',
                              'No Matching Threshold' : '*', 
                              'Ongoing SEP Event' : '>',
                              'Unmatched' : '2',
@@ -351,6 +351,11 @@ exclude_models = ['SPRINTS Post Eruptive 72-96 hrs',
                   'SEPSTER2D CME',
                   'ZEUS+iPATH_Flare'
                  ]
+
+# CONTROLS WHICH DATA POINTS APPEAR IN PREDICTED VS. OBSERVED PEAK FLUX PLOTS.
+# 'current'  : SHOW ONLY POINTS FROM THE CURRENT REPORT PERIOD (DEFAULT).
+# 'all_time' : SHOW ALL-TIME POINTS (FADED) WITH CURRENT PERIOD POINTS PROMINENT.
+peak_flux_scope = 'all_time'
 
 # CAREFUL WITH THESE
 reset_all_time_df = False

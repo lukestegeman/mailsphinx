@@ -92,15 +92,4 @@ def plot_probability_time_series_group(name, group, save, week_start, week_end, 
     
 def plot_probability_time_series_subgroup(ax, subname, subgroup, color):
     ax[1, 0].scatter(subgroup['Prediction Window Start'], subgroup['Predicted SEP Probability'], color=color, label=subname, facecolor='none', s=config.plot.marker_size)  
-    ax[1, 1].hist(subgroup['Predicted SEP Probability'], bins=100, range=(0, 1), orientation='horizontal', color=color, stacked=True, label=subname)
-
-
-
-
-
-    
-    
-    
-
-
-
+    ax[1, 1].hist(subgroup['Predicted SEP Probability'], bins=100, range=(0, 1), orientation='horizontal', color=color, histtype='step', linewidth=1.5, label=subname)
