@@ -1,4 +1,5 @@
-from ..utils import config
+
+m ..utils import config
 from ..utils import format_objects
 
 import datetime
@@ -13,7 +14,7 @@ def _section_anchor(title):
 def build_section_title(title, base_indent=0):
     anchor = _section_anchor(title)
     text =  (base_indent + 0) * config.html.indent + f'<div class="section_title"><a name="{anchor}"></a>\n'
-    text += (base_indent + 1) * config.html.indent + '<p>' + title + '</p>\n'
+    text += (base_indent + 1) * config.html.indent + '<p>' + title + ' <a href="#contents" style="font-size:0.6em; font-weight:normal; color:#666666;">&#8593; Contents</a></p>\n'
     text += (base_indent + 0) * config.html.indent + '</div>\n'
     return text
 
@@ -29,7 +30,7 @@ def build_toc(sections, notes=None):
     notes : str or None
         Optional notes text to display below the TOC links.
     """
-    text = '<div class="section_title"><p>Contents</p></div>\n'
+    text = '<div class="section_title"><a name="contents"></a><p>Contents</p></div>\n'
     text += '<div class="regular_text"><ul>\n'
     for title in sections:
         anchor = _section_anchor(title)

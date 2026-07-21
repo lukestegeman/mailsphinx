@@ -193,7 +193,7 @@ def _compute_model_metrics(df):
                 for _, label, fname, _ in _FLUX_SECTIONS}
 
     results = {}
-    for energy_key, threshold_key in config.order.energy_channel_threshold_order:
+    for energy_key, threshold_key, _ in config.order.energy_channel_threshold_order:
         channel_mask = (
             df['Energy Channel Key'].apply(_normalize_energy_key) == energy_key) & (
             df['Threshold Key'] == threshold_key
@@ -257,7 +257,7 @@ def _build_metrics_section_tables(current, previous, metric_names,
     buf = io.StringIO()
     buf.write(build_html.build_paragraph_title(title))
     any_table = False
-    for energy_key, threshold_key in config.order.energy_channel_threshold_order:
+    for energy_key, threshold_key, _ in config.order.energy_channel_threshold_order:
         table_html = _build_channel_metrics_table(
             current, previous, metric_names, section_key,
             energy_key, threshold_key, headers, metrics_config)

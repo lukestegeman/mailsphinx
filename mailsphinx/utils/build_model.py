@@ -21,11 +21,12 @@ def _norm_energy_key(key):
 def _is_configured_channel(energy_key, threshold_key):
     """Return True if this (energy, threshold) pair is in the configured list."""
     norm = _norm_energy_key(energy_key)
-    return (norm, threshold_key) in set(config.order.energy_channel_threshold_order)
+    return any(norm == ek and threshold_key == tk
+               for ek, tk, _ in config.order.energy_channel_threshold_order)
 
 
 def build_model_section(df, weekly_df, week_start, week_end, events, convert_images_to_base64=False):
-    text = build_html.build_section_title('Model Performance Timelines')
+    text = build_html.build_section_title('Model Performance Time Series')
 
     # MAKE CONTINGENCY TIMELINES
     text += build_html.build_paragraph_title('SEP All Clear Contingency Timelines')
@@ -103,28 +104,64 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                     text += plot_probability.build_probability_plot(name + subname + ', ' + energy_channel_string, group, os.path.join(config.path.email_image, 'probability-histogram-' + str(counter) + '.jpg'), week_start, week_end, filtered_events, need_legend=need_legend, convert_image_to_base64=convert_images_to_base64)
                     counter += 1
 
-    # MAKE PREDICTED PEAK FLUX VS. OBSERVED PEAK FLUX
+    # MAKE PREDICTED PEAK FLUX VS. OBSERVED PEAK FLUX — 4 PLOTS PER CHANNEL:
+    # ALL-TIME ONSET PEAK, ALL-TIME MAX FLUX, THIS PERIOD ONSET PEAK,
+    # THIS PERIOD MAX FLUX. KEEPS ALL-TIME AND CURRENT PERIOD VISUALLY SEPARATE.
+    # ITERATE OVER CONFIGURED CHANNELS FROM df (NOT weekly_df) SO THAT MODELS
+    # WITH NO FORECASTS IN THE CURRENT PERIOD STILL APPEAR IN ALL-TIME PLOTS.
     counter = 0
-    at_least_one_plot = True
-    for name, group in weekly_df.groupby('Energy Channel Key'):
-        for subname, subgroup in group.groupby('Threshold Key'):
-            if not _is_configured_channel(name, subname):
-                continue
-            energy_channel_string = manipulate_keys.convert_energy_key_to_string(name)
-            threshold_flux_string = manipulate_keys.convert_threshold_key_to_string(subname)
-            threshold_flux = float(threshold_flux_string.lstrip('> ').rstrip(' pfu'))
-            is_onset_peak_empty = (filter_objects.is_column_empty(subgroup, 'Predicted SEP Peak Intensity (Onset Peak)')) or (filter_objects.is_column_empty(subgroup, 'Observed SEP Peak Intensity (Onset Peak)'))
-            is_max_flux_empty = (filter_objects.is_column_empty(subgroup, 'Predicted SEP Peak Intensity Max (Max Flux)')) or (filter_objects.is_column_empty(subgroup, 'Observed SEP Peak Intensity Max (Max Flux)'))
-            if is_onset_peak_empty and is_max_flux_empty:
-                plot_exists = False
-            else:
-                plot_path = os.path.join(config.path.email_image, 'predicted-peak-flux-vs-observed-peak-flux-' + str(counter) + '.jpg')
+    section_started = False
+    for energy_key, threshold_key, (axis_min, axis_max) in config.order.energy_channel_threshold_order:
+        energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
+        threshold_flux_string = manipulate_keys.convert_threshold_key_to_string(threshold_key)
+        threshold_flux = float(threshold_flux_string.lstrip('> ').rstrip(' pfu'))
+
+        # NORMALIZE ENERGY KEY SO REleASE MISMATCH ROWS ARE INCLUDED
+        all_time_mask = (
+            df['Energy Channel Key'].apply(_norm_energy_key).eq(energy_key) &
+            (df['Threshold Key'] == threshold_key)
+        )
+        period_mask = (
+            weekly_df['Energy Channel Key'].apply(_norm_energy_key).eq(energy_key) &
+            (weekly_df['Threshold Key'] == threshold_key)
+        )
+        all_time_subgroup = df[all_time_mask]
+        period_subgroup = weekly_df[period_mask]
+
+        channel_plots = []
+        for source_df, period_label in [
+            (all_time_subgroup, 'All Time'),
+            (period_subgroup,   'This Period'),
+        ]:
+            for data_type_def in [plot_peak_flux.ONSET_PEAK, plot_peak_flux.MAX_FLUX]:
+                plot_path = os.path.join(
+                    config.path.email_image,
+                    f'predicted-peak-flux-vs-observed-peak-flux-{counter}.jpg')
                 counter += 1
-                plot_exists, plot_text = plot_peak_flux.build_peak_flux_plot(energy_channel_string, threshold_flux_string, subgroup, plot_path, threshold_flux, all_time_df=df, convert_image_to_base64=convert_images_to_base64)
-            if plot_exists:
-                if at_least_one_plot:
-                    at_least_one_plot = False
-                    text += build_html.build_paragraph_title('Predicted Peak Flux vs. Observed Peak Flux')
-                text += plot_text
+                plot_exists, plot_text = plot_peak_flux.plot_peak_flux_single(
+                    energy_channel_string, threshold_flux_string,
+                    source_df, plot_path, threshold_flux,
+                    data_type_def, period_label,
+                    axis_min=axis_min, axis_max=axis_max,
+                    convert_image_to_base64=convert_images_to_base64)
+                if plot_exists:
+                    channel_plots.append(plot_text)
+
+        if not section_started:
+            section_started = True
+            text += build_html.build_paragraph_title(
+                'Predicted Peak Flux vs. Observed Peak Flux')
+        text += build_html.build_paragraph_title(
+            f'{energy_channel_string}, {threshold_flux_string}', sublevel=1)
+        for plot_text in channel_plots:
+            text += plot_text
+        # SINGLE SHARED LEGEND FOR ALL 4 PLOTS IN THIS CHANNEL
+        legend_path = os.path.join(
+            config.path.email_image,
+            f'peak-flux-legend-{counter}.jpg')
+        counter += 1
+        text += plot_peak_flux.build_peak_flux_legend(
+            df, legend_path,
+            convert_image_to_base64=convert_images_to_base64)
     text += build_html.build_divider()
     return text

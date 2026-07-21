@@ -1,4 +1,4 @@
-# Configuration file
+onfiguration file
 import datetime
 import os
 import pytz
@@ -180,8 +180,8 @@ class Image:
         self.width = 12
         self.height = 6
         self.height_contingency = 3
-        self.peak_flux_width = 8 
-        self.peak_flux_height = 6
+        self.peak_flux_width = 5 
+        self.peak_flux_height = 5
         self.cid_dict = {}
         self.cid_dict_index = 0
         self.width_legend = 6
@@ -323,13 +323,17 @@ class Order:
         # BASE CHANNEL (>10 MeV) VIA KEY NORMALIZATION AT RUNTIME.
         self.energy_channel_threshold_order = [
             ('min.10.0.max.-1.0.units.MeV',
-             'threshold.10.0.units.1 / (cm2 s sr)'),
+             'threshold.10.0.units.1 / (cm2 s sr)',
+             (1e-2, 1e+5)),
             #('min.30.0.max.-1.0.units.MeV',
             # 'threshold.1.0.units.1 / (cm2 s sr)'),
+            # (1e-2, 1e+5)),
             #('min.50.0.max.-1.0.units.MeV',
             # 'threshold.1.0.units.1 / (cm2 s sr)'),
+            # (1e-2, 1e+5)),
             ('min.100.0.max.-1.0.units.MeV',
-             'threshold.1.0.units.1 / (cm2 s sr)'),
+             'threshold.1.0.units.1 / (cm2 s sr)'
+             (1e-2, 1e+3)),
         ]
 order = Order()
 
@@ -351,11 +355,6 @@ exclude_models = ['SPRINTS Post Eruptive 72-96 hrs',
                   'SEPSTER2D CME',
                   'ZEUS+iPATH_Flare'
                  ]
-
-# CONTROLS WHICH DATA POINTS APPEAR IN PREDICTED VS. OBSERVED PEAK FLUX PLOTS.
-# 'current'  : SHOW ONLY POINTS FROM THE CURRENT REPORT PERIOD (DEFAULT).
-# 'all_time' : SHOW ALL-TIME POINTS (FADED) WITH CURRENT PERIOD POINTS PROMINENT.
-peak_flux_scope = 'all_time'
 
 # CAREFUL WITH THESE
 reset_all_time_df = False

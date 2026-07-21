@@ -17,7 +17,7 @@ def check_for_event(df, start_datetime, end_datetime):
     ]
     # FILTER TO ONLY ENERGY CHANNEL / THRESHOLD PAIRS CONFIGURED FOR DISPLAY.
     # NORMALIZE ENERGY KEY TO STRIP REleASE MISMATCH SUFFIXES BEFORE COMPARING.
-    configured = set(config.order.energy_channel_threshold_order)
+    configured = {(ek, tk) for ek, tk, _ in config.order.energy_channel_threshold_order}
     def _norm(key):
         return key.split('_min.')[0]
     event_forecasts = event_forecasts[

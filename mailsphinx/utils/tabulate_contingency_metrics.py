@@ -196,7 +196,7 @@ def build_all_clear_contingency_table(df, week_start, week_end):
 
     breakdown_sections = []
 
-    for energy_key, threshold_key in config.order.energy_channel_threshold_order:
+    for energy_key, threshold_key, _ in config.order.energy_channel_threshold_order:
         channel_mask = (
             (df['Energy Channel Key'].apply(_normalize_energy_key) == energy_key) &
             (df['Threshold Key'] == threshold_key)

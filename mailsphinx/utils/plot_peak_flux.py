@@ -2,7 +2,10 @@ from ..utils import build_html
 from ..utils import config
 from ..utils import filter_objects
 
+import math
+import os
 import numpy as np
+import pandas as pd
 import matplotlib
 import matplotlib.lines
 import matplotlib.patches
@@ -11,185 +14,188 @@ import matplotlib.pyplot as plt
 plt.rcParams['font.family'] = config.plot.font
 plt.rcParams['font.size'] = config.plot.fontsize
 
-def build_peak_flux_plot(energy_channel_string, threshold_flux_string, df, savefile, threshold_flux, all_time_df=None, convert_image_to_base64=False):
-    plot_exists = plot_predicted_peak_flux_vs_observed_peak_flux(
-        energy_channel_string, threshold_flux_string, df, savefile, threshold_flux,
-        all_time_df=all_time_df)
-    text = ''
-    if plot_exists:
-        text += build_html.build_image(savefile, write_as_base64=convert_image_to_base64)
-    return plot_exists, text
 
-def plot_predicted_peak_flux_vs_observed_peak_flux(energy_channel_string, threshold_flux_string, df, save, threshold_flux, all_time_df=None):
-    """Plot predicted vs. observed peak flux.
+# DATA TYPE DEFINITIONS: (display_name, pred_col, obs_col, marker_key)
+ONSET_PEAK = (
+    'Onset Peak',
+    'Predicted SEP Peak Intensity (Onset Peak)',
+    'Observed SEP Peak Intensity (Onset Peak)',
+    'Onset Peak',
+)
+MAX_FLUX = (
+    'Max Flux',
+    'Predicted SEP Peak Intensity Max (Max Flux)',
+    'Observed SEP Peak Intensity Max (Max Flux)',
+    'Max Flux',
+)
 
-    If config.peak_flux_scope == 'all_time' and all_time_df is provided,
-    all-time points are plotted faded in the background and current period
-    points are plotted prominently on top. Otherwise only current period
-    points are shown.
+
+def plot_peak_flux_single(energy_channel_string, threshold_flux_string, df,
+                          save, threshold_flux, data_type_def,
+                          period_label, axis_min=None, axis_max=None,
+                          convert_image_to_base64=False):
+    """Plot predicted vs. observed peak flux for a single data type.
+    NO LEGEND IS DRAWN so the plotting area is always a uniform square.
+    Call build_peak_flux_legend() separately to produce a shared legend.
+
+    Parameters
+    ----------
+    axis_min, axis_max : float or None
+        Fixed axis limits in pfu. If None, defaults to ±3/+4 decades
+        centered on threshold_flux.
     """
-    use_all_time = (
-        getattr(config, 'peak_flux_scope', 'current') == 'all_time'
-        and all_time_df is not None
+    display_name, pred_col, obs_col, marker_key = data_type_def
+
+    # COMPUTE AXIS LIMITS IF NOT EXPLICITLY PROVIDED
+    if axis_min is None or axis_max is None:
+        log_thresh = math.log10(threshold_flux)
+        axis_min = 10 ** (log_thresh - 3.0)
+        axis_max = 10 ** (log_thresh + 4.0)
+
+    # ax.set_aspect('equal') ENFORCES A SQUARE PLOTTING AREA INDEPENDENT
+    # OF FIGURE SIZE. tight_layout WITH NO LEGEND KEEPS IT CONSISTENT.
+    fig, ax = plt.subplots(1, 1, figsize=(config.image.peak_flux_width,
+                                          config.image.peak_flux_height))
+
+    # FOR REleASE MODELS, READ FROM CUMULATIVE _mm_Max SELECTION CSV FILES
+    # ACCUMULATED BY run_sphinx.sh. THESE ARE THE AUTHORITATIVE SOURCE FOR
+    # PREDICTED VS. OBSERVED PEAK FLUX PAIRS FROM THE _mm_Max SELECTIONS FILES.
+    # peak_intensity_selections_*_mm_Max.csv  → ONSET PEAK (obs = onset peak)
+    # peak_intensity_max_selections_*_mm_Max.csv → MAX FLUX  (obs = max flux)
+    RELEASE_DIR = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))),
+        'pushvivid_data', 'cumulative_release_selections'
     )
-
-    def _scatter_groups(source_df, alpha, marker_size_factor=1.0, zorder_offset=0):
-        """Scatter onset peak and max flux points from source_df.
-        Returns True if any data was plotted, and updates the shared bounds."""
-        nonlocal min_predicted_peak, max_predicted_peak, min_observed_peak, max_observed_peak
-        any_data = False
-        for model_category, group in source_df.groupby('Model Category'):
-            onset_peak_group = group[['Predicted SEP Peak Intensity (Onset Peak)', 'Observed SEP Peak Intensity (Onset Peak)']].dropna()
-            max_flux_group = group[['Predicted SEP Peak Intensity Max (Max Flux)', 'Observed SEP Peak Intensity Max (Max Flux)']].dropna()
-            is_onset_peak_empty = (filter_objects.is_column_empty(onset_peak_group, 'Predicted SEP Peak Intensity (Onset Peak)')) or (filter_objects.is_column_empty(onset_peak_group, 'Observed SEP Peak Intensity (Onset Peak)'))
-            is_max_flux_empty = (filter_objects.is_column_empty(max_flux_group, 'Predicted SEP Peak Intensity Max (Max Flux)')) or (filter_objects.is_column_empty(max_flux_group, 'Observed SEP Peak Intensity Max (Max Flux)'))
-            if is_onset_peak_empty and is_max_flux_empty:
-                continue
-            any_data = True
-            color = config.color.color_cycle[list(source_df['Model Category'].unique()).index(model_category) % len(config.color.color_cycle)]
-            if not is_onset_peak_empty:
-                pred_col = 'Predicted SEP Peak Intensity (Onset Peak)'
-                obs_col  = 'Observed SEP Peak Intensity (Onset Peak)'
-                valid = onset_peak_group[(onset_peak_group[pred_col] > 0) & (onset_peak_group[obs_col] > 0)]
-                if len(valid):
-                    min_predicted_peak = min(min_predicted_peak, valid[pred_col].min())
-                    max_predicted_peak = max(max_predicted_peak, valid[pred_col].max())
-                    min_observed_peak  = min(min_observed_peak,  valid[obs_col].min())
-                    max_observed_peak  = max(max_observed_peak,  valid[obs_col].max())
-                plt.scatter(onset_peak_group[obs_col], onset_peak_group[pred_col],
-                            s=config.plot.marker_size * marker_size_factor,
-                            color=color, marker=config.shape.associations['Onset Peak'],
-                            facecolors='none', alpha=alpha,
-                            zorder=2 + zorder_offset)
-            if not is_max_flux_empty:
-                pred_col = 'Predicted SEP Peak Intensity Max (Max Flux)'
-                obs_col  = 'Observed SEP Peak Intensity Max (Max Flux)'
-                valid = max_flux_group[(max_flux_group[pred_col] > 0) & (max_flux_group[obs_col] > 0)]
-                if len(valid):
-                    min_predicted_peak = min(min_predicted_peak, valid[pred_col].min())
-                    max_predicted_peak = max(max_predicted_peak, valid[pred_col].max())
-                    min_observed_peak  = min(min_observed_peak,  valid[obs_col].min())
-                    max_observed_peak  = max(max_observed_peak,  valid[obs_col].max())
-                plt.scatter(max_flux_group[obs_col], max_flux_group[pred_col],
-                            s=config.plot.marker_size * marker_size_factor,
-                            color=color, marker=config.shape.associations['Max Flux'],
-                            facecolors='none', alpha=alpha,
-                            zorder=1 + zorder_offset)
-        return any_data
-
-    plot_exists = False
-    figure_created = False
-    min_predicted_peak = 1.0e+99
-    max_predicted_peak = 0.0
-    min_observed_peak  = 1.0e+99
-    max_observed_peak  = 0.0
-    handles = []
-
-    # CHECK IF CURRENT PERIOD HAS ANY DATA BEFORE CREATING FIGURE
-    has_onset = not (filter_objects.is_column_empty(df, 'Predicted SEP Peak Intensity (Onset Peak)') or
-                     filter_objects.is_column_empty(df, 'Observed SEP Peak Intensity (Onset Peak)'))
-    has_max   = not (filter_objects.is_column_empty(df, 'Predicted SEP Peak Intensity Max (Max Flux)') or
-                     filter_objects.is_column_empty(df, 'Observed SEP Peak Intensity Max (Max Flux)'))
-    if not has_onset and not has_max:
-        return False
-
-    # IF all_time MODE, ALSO CHECK ALL-TIME DATA
-    if use_all_time:
-        at_has_onset = not (filter_objects.is_column_empty(all_time_df, 'Predicted SEP Peak Intensity (Onset Peak)') or
-                            filter_objects.is_column_empty(all_time_df, 'Observed SEP Peak Intensity (Onset Peak)'))
-        at_has_max   = not (filter_objects.is_column_empty(all_time_df, 'Predicted SEP Peak Intensity Max (Max Flux)') or
-                            filter_objects.is_column_empty(all_time_df, 'Observed SEP Peak Intensity Max (Max Flux)'))
-        if not at_has_onset and not at_has_max:
-            use_all_time = False
-
-    plt.figure(figsize=(config.image.peak_flux_width, config.image.peak_flux_height))
-
-    if use_all_time:
-        # FADED ALL-TIME POINTS IN BACKGROUND
-        _scatter_groups(all_time_df, alpha=0.15, marker_size_factor=0.8, zorder_offset=0)
-        # PROMINENT CURRENT PERIOD POINTS ON TOP
-        _scatter_groups(df, alpha=0.9, marker_size_factor=1.5, zorder_offset=10)
+    # DETERMINE WHICH SELECTIONS FILE TYPE TO USE BASED ON DATA TYPE
+    if marker_key == 'Onset Peak':
+        release_file_prefix = 'peak_intensity_selections_'
+        release_pred_col = 'Predicted SEP Peak Intensity (Onset Peak)'
+        release_obs_col  = 'Observed SEP Peak Intensity (Onset Peak)'
     else:
-        _scatter_groups(df, alpha=0.85, marker_size_factor=1.0, zorder_offset=0)
+        release_file_prefix = 'peak_intensity_max_selections_'
+        release_pred_col = 'Predicted SEP Peak Intensity (Onset Peak)'
+        release_obs_col  = 'Observed SEP Peak Intensity Max (Max Flux)'
 
-    # BUILD LEGEND PER MODEL CATEGORY FROM CURRENT PERIOD
-    for i, model_category in enumerate(sorted(df['Model Category'].unique())):
-        color = config.color.color_cycle[i % len(config.color.color_cycle)]
-        handles.append(matplotlib.patches.Patch(color=color, label=model_category))
+    # LOAD AND CONCATENATE ALL MATCHING RELEASE CSV FILES
+    release_frames = []
+    if os.path.isdir(RELEASE_DIR):
+        for fname in os.listdir(RELEASE_DIR):
+            if fname.startswith(release_file_prefix) and fname.endswith('_mm_Max.csv'):
+                try:
+                    frame = pd.read_csv(os.path.join(RELEASE_DIR, fname))
+                    release_frames.append(frame)
+                except Exception:
+                    pass
+    release_df = pd.concat(release_frames, ignore_index=True) if release_frames else pd.DataFrame()
 
-    plot_exists = True
+    # FILTER df TO NON-REleASE MODELS ONLY FOR STANDARD COLUMN PLOTTING
+    is_release = df['Model'].str.contains('REleASE', case=False, na=False)
+    non_release_df = df[~is_release]
 
-    import math
-    if min_predicted_peak >= 1.0e+98 or min_observed_peak >= 1.0e+98:
-        plt.close()
-        return False
+    all_categories = sorted(df['Model Category'].unique())
+    handles = []
+    has_data = False
+
+    def _scatter(source_df, use_pred_col, use_obs_col, is_release_src=False):
+        nonlocal has_data
+        group_col = 'Model Category' if not is_release_src else 'Model'
+        if group_col not in source_df.columns:
+            return
+        for group_key, group in source_df.groupby(group_col):
+            grp = group[[use_pred_col, use_obs_col]].dropna()
+            grp = grp[(grp[use_pred_col] > 0) & (grp[use_obs_col] > 0)]
+            if len(grp) == 0:
+                continue
+            # FOR REleASE, DERIVE CATEGORY FROM MODEL NAME
+            if is_release_src:
+                from ..utils import filter_objects as _fo
+                cat, _ = _fo.extract_common_substring(group_key)
+            else:
+                cat = group_key
+            i = all_categories.index(cat) if cat in all_categories else 0
+            color = config.color.color_cycle[i % len(config.color.color_cycle)]
+            ax.scatter(grp[use_obs_col], grp[use_pred_col],
+                       s=config.plot.marker_size, color=color,
+                       marker=config.shape.associations[marker_key],
+                       facecolors='none', zorder=2)
+            if not any(h.get_label() == cat for h in handles):
+                handles.append(matplotlib.patches.Patch(color=color, label=cat))
+            has_data = True
+
+    _scatter(non_release_df, pred_col, obs_col)
+    if not release_df.empty:
+        _scatter(release_df, release_pred_col, release_obs_col, is_release_src=True)
+
+    if not has_data:
+        ax.text(0.5, 0.5, 'No data', transform=ax.transAxes,
+                ha='center', va='center', fontsize=12, color='gray')
 
     log_thresh = math.log10(threshold_flux)
-    axis_min = 10 ** (log_thresh - 3.0)
-    axis_max = 10 ** (log_thresh + 4.0)  # ONE EXTRA DECADE ON THE UPPER-RIGHT
+    base_title = energy_channel_string + ', ' + threshold_flux_string
+    color_key = base_title.replace('> ', '>=') + ' Event'
 
-    plt.plot([axis_min, axis_max], [axis_min, axis_max],
-             color='black', linestyle='--', zorder=0)
-    title = energy_channel_string + ', ' + threshold_flux_string
-    color_key = title.replace('> ', '>=') + ' Event'
-    plt.plot([threshold_flux, threshold_flux], [axis_min, axis_max],
-             color=config.color.associations[color_key], linestyle='solid', zorder=0)
-    plt.plot([axis_min, axis_max], [threshold_flux, threshold_flux],
-             color=config.color.associations[color_key], linestyle='solid', zorder=0)
+    ax.plot([axis_min, axis_max], [axis_min, axis_max],
+            color='black', linestyle='--', zorder=0)
+    ax.plot([threshold_flux, threshold_flux], [axis_min, axis_max],
+            color=config.color.associations[color_key], linestyle='solid', zorder=0)
+    ax.plot([axis_min, axis_max], [threshold_flux, threshold_flux],
+            color=config.color.associations[color_key], linestyle='solid', zorder=0)
 
-    plt.grid(True, which='major', linestyle='--', linewidth=0.5, alpha=0.7)
-    plt.title(title)
-    plt.xlabel('Observed Peak Flux [pfu]')
-    plt.ylabel('Predicted Peak Flux [pfu]')
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.xlim([axis_min, axis_max])
-    plt.ylim([axis_min, axis_max])
+    ax.grid(True, which='major', linestyle='--', linewidth=0.5, alpha=0.7)
+    ax.set_title(f'{base_title} — {display_name} ({period_label})')
+    ax.set_xlabel('Observed Peak Flux [pfu]')
+    ax.set_ylabel('Predicted Peak Flux [pfu]')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlim([axis_min, axis_max])
+    ax.set_ylim([axis_min, axis_max])
+    ax.set_aspect('equal', adjustable='box')
 
-    if use_all_time:
-        handles += [
-            matplotlib.lines.Line2D([0], [0], marker='o', color='gray',
-                                    alpha=0.3, linestyle='None', markersize=5,
-                                    label='All time'),
-            matplotlib.lines.Line2D([0], [0], marker='o', color='gray',
-                                    alpha=0.9, linestyle='None', markersize=7,
-                                    label='This period'),
-        ]
+    # SHOW A TICK LABEL AT EVERY ORDER OF MAGNITUDE
+    import matplotlib.ticker as mticker
+    ax.xaxis.set_major_locator(mticker.LogLocator(base=10, numticks=20))
+    ax.yaxis.set_major_locator(mticker.LogLocator(base=10, numticks=20))
+    ax.xaxis.set_major_formatter(mticker.LogFormatterSciNotation(base=10))
+    ax.yaxis.set_major_formatter(mticker.LogFormatterSciNotation(base=10))
+    ax.xaxis.set_minor_locator(mticker.LogLocator(base=10, subs='auto', numticks=20))
+    ax.yaxis.set_minor_locator(mticker.LogLocator(base=10, subs='auto', numticks=20))
+    ax.xaxis.set_minor_formatter(mticker.NullFormatter())
+    ax.yaxis.set_minor_formatter(mticker.NullFormatter())
 
-    if handles:
-        # PLACE LEGEND OUTSIDE THE PLOT TO THE RIGHT SO IT DOESN'T
-        # OVERLAP DATA AND THE PLOTTING AREA ASPECT RATIO IS UNCHANGED.
-        plt.legend(handles=handles, loc='upper left',
-                   bbox_to_anchor=(1.02, 1.0),
-                   borderaxespad=0,
-                   framealpha=config.plot.opacity,
-                   fontsize='small')
     plt.tight_layout()
     plt.savefig(save, dpi=config.image.dpi, bbox_inches='tight')
     plt.close()
-    return plot_exists
 
-def build_table_row(df, model_category, data_type, prediction_column, observation_column, threshold_flux, row_counter=0, color_counter=0):
-    hits_condition =              (df[prediction_column] >= threshold_flux) & (df[observation_column] >= threshold_flux)
-    misses_condition =            (df[prediction_column] <  threshold_flux) & (df[observation_column] >= threshold_flux)
-    false_alarms_condition =      (df[prediction_column] >= threshold_flux) & (df[observation_column] <  threshold_flux)
-    correct_negatives_condition = (df[prediction_column] <  threshold_flux) & (df[observation_column] <  threshold_flux)
-    hits =              str(len(df[hits_condition]))
-    misses =            str(len(df[misses_condition]))
-    false_alarms =      str(len(df[false_alarms_condition]))
-    correct_negatives = str(len(df[correct_negatives_condition]))
-    forecasts = str(len(df))
-    row = [data_type, model_category, hits, misses, false_alarms, correct_negatives, forecasts]
-    row_color_dict = {}
-    row_text_color_dict = {}
-    row_color_dict[(row_counter, 1)] = config.color.color_cycle[color_counter]
-    row_color_dict[(row_counter, 2)] = config.color.associations['Hits']
-    row_color_dict[(row_counter, 3)] = config.color.associations['Misses']
-    row_color_dict[(row_counter, 4)] = config.color.associations['False Alarms']
-    row_color_dict[(row_counter, 5)] = config.color.associations['Correct Negatives']
-    row_text_color_dict[(row_counter, 1)] = '#ffffff'
-    row_text_color_dict[(row_counter, 2)] = '#ffffff'
-    row_text_color_dict[(row_counter, 3)] = '#ffffff'
-    row_text_color_dict[(row_counter, 4)] = '#ffffff'
-    row_text_color_dict[(row_counter, 5)] = '#ffffff'
-    return row, row_color_dict, row_text_color_dict
+    return True, build_html.build_image(save, write_as_base64=convert_image_to_base64)
+
+
+def build_peak_flux_legend(df, save, convert_image_to_base64=False):
+    """Build a standalone legend image for the peak flux plots,
+    one entry per Model Category present in df."""
+    categories = sorted(df['Model Category'].unique())
+    if not categories:
+        return ''
+
+    handles = [
+        matplotlib.patches.Patch(
+            color=config.color.color_cycle[i % len(config.color.color_cycle)],
+            label=cat)
+        for i, cat in enumerate(categories)
+    ]
+
+    # USE 2 COLUMNS TO KEEP THE LEGEND COMPACT
+    ncol = 2
+    nrows = math.ceil(len(handles) / ncol)
+    fig_width = 4.0
+    fig_height = max(0.5, nrows * 0.28 + 0.3)
+
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    ax.axis('off')
+    ax.legend(handles=handles, loc='center', framealpha=config.plot.opacity,
+              fontsize='small', ncol=ncol, columnspacing=1.0, handlelength=1.5)
+    plt.tight_layout()
+    plt.savefig(save, dpi=config.image.dpi, bbox_inches='tight')
+    plt.close()
+
+    return build_html.build_image(save, write_as_base64=convert_image_to_base64)
