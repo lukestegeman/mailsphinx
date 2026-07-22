@@ -100,7 +100,11 @@ def _is_excluded(metrics_config, section, cat, flav):
 # -----------------------------------------------------------------------
 
 def _metrics_dir():
-    return '/home/m_sphinx/test_reqs/sphinxval/pushvivid_data/cumulative_metrics'
+    import sys as _sys
+    _sys.path.insert(0, '/data/SPHINX/code')
+    import pipeline_config as _pc
+    import os as _os
+    return _os.path.join(_pc.CODE_DIR, 'sphinxval', 'pushvivid_data', 'cumulative_metrics')
 
 
 def _load_sphinxval_metrics(filename):
