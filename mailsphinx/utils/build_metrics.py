@@ -23,6 +23,7 @@ import pandas as pd
 from ..utils import build_html
 from ..utils import config
 from ..utils import manipulate_keys
+from ..utils import filter_objects
 
 
 # -----------------------------------------------------------------------
@@ -112,18 +113,38 @@ def _load_sphinxval_metrics(filename):
     if not os.path.exists(path):
         return pd.DataFrame()
     try:
-        return pd.read_pickle(path)
+        df = pd.read_pickle(path)
     except Exception:
         return pd.DataFrame()
+    if df.empty or 'Model' not in df.columns:
+        return df
+    # SPLIT THE RAW Model COLUMN THE SAME WAY THE MAIN SPHINX DATAFRAME
+    # IS SPLIT (filter_objects.categorize_column), SO LOOKUPS CAN MATCH
+    # ON Model Category/Model Flavor RATHER THAN RECONSTRUCTING A
+    # "cat flav" STRING AND COMPARING IT AGAINST THE RAW, UNMODIFIED
+    # Model COLUMN. A RECONSTRUCTED STRING ONLY MATCHES THE RAW NAME BY
+    # COINCIDENCE, WHEN THE ORIGINAL SEPARATOR HAPPENED TO BE A SPACE
+    # (e.g. "SAWS-ASPECS flare"). MODELS THAT USE AN UNDERSCORE AS AN
+    # INTERNAL SEPARATOR BEYOND THE FIRST SPLIT (e.g. "MAG4_SHARP_HMI"
+    # -> cat "MAG4", flav "SHARP_HMI" -> reconstructed "MAG4 SHARP_HMI")
+    # NEVER MATCH THEIR OWN RAW NAME, AND EVERY METRIC FOR THAT MODEL
+    # SILENTLY RENDERS AS N/A.
+    df = filter_objects.categorize_column(df, 'Model', 'Model Category', 'Model Flavor')
+    return df
 
 
-def _sphinxval_metric(metrics_df, model_name, energy_key, threshold_key, column):
+def _sphinxval_metric(metrics_df, cat, flav, energy_key, threshold_key, column):
     """Look up a metric for a specific model + energy channel + threshold.
-    Normalizes the energy key so REleASE mismatch keys match the base channel."""
-    if metrics_df.empty or 'Model' not in metrics_df.columns or column not in metrics_df.columns:
+    Normalizes the energy key so REleASE mismatch keys match the base channel.
+    Matches on Model Category/Model Flavor (derived from the same
+    splitting logic used on the main dataframe), not on a reconstructed
+    "cat flav" string compared against the raw Model column -- see
+    _load_sphinxval_metrics for why that comparison is unreliable."""
+    if metrics_df.empty or 'Model Category' not in metrics_df.columns or column not in metrics_df.columns:
         return np.nan
     mask = (
-        (metrics_df['Model'] == model_name) &
+        (metrics_df['Model Category'] == cat) &
+        (metrics_df['Model Flavor'] == flav) &
         (metrics_df['Energy Channel'].apply(_normalize_energy_key) == energy_key) &
         (metrics_df['Threshold'] == threshold_key)
     )
@@ -209,19 +230,18 @@ def _compute_model_metrics(df):
         for cat, cat_group in channel_df.groupby('Model Category'):
             for flav, _ in cat_group.groupby('Model Flavor'):
                 key = (cat, flav, energy_key, threshold_key)
-                model_name = f'{cat} {flav}'.strip()
 
                 metrics = {}
                 for label, col in _AC_METRICS:
                     metrics[label] = _sphinxval_metric(
-                        ac_df, model_name, energy_key, threshold_key, col)
+                        ac_df, cat, flav, energy_key, threshold_key, col)
                 for label, col in _PROB_METRICS:
                     metrics[label] = _sphinxval_metric(
-                        prob_df, model_name, energy_key, threshold_key, col)
+                        prob_df, cat, flav, energy_key, threshold_key, col)
                 for _, flux_label, _, _ in _FLUX_SECTIONS:
                     for label, col in _FLUX_METRICS:
                         metrics[f'{label} ({flux_label})'] = _sphinxval_metric(
-                            flux_dfs[flux_label], model_name, energy_key, threshold_key, col)
+                            flux_dfs[flux_label], cat, flav, energy_key, threshold_key, col)
 
                 results[key] = metrics
     return results
