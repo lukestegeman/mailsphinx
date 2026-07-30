@@ -21,13 +21,86 @@ import warnings
 pd.options.mode.chained_assignment = None
 
 
+# COLUMNS ACTUALLY REFERENCED BY MAILSPHINX'S build_* / plot_* / tabulate_*
+# MODULES, CONFIRMED BY AUDITING EVERY DIRECT COLUMN ACCESS ACROSS THE
+# CODEBASE (NOT DERIVED FROM config.type.dataframe, WHICH IS DECLARED BUT
+# NEVER ACTUALLY USED ANYWHERE). 'Model Category'/'Model Flavor' AND OTHER
+# *Surrogate/COMPUTED COLUMNS ARE DELIBERATELY EXCLUDED -- THEY'RE
+# COMPUTED FROM 'Model' (VIA filter_objects.categorize_column) AFTER
+# LOADING, NOT READ DIRECTLY.
+MAILSPHINX_NEEDED_COLUMNS = [
+    'Model',
+    'Energy Channel Key',
+    'Threshold Key',
+    'Mismatch Allowed',
+    'Forecast Issue Time',
+    'Prediction Window Start',
+    'Prediction Window End',
+    'Observed SEP All Clear',
+    'Predicted SEP All Clear',
+    'All Clear Match Status',
+    'Observed SEP Threshold Crossing Time',
+    'Observed SEP End Time',
+    'Observed SEP Duration',
+    'Observed SEP Fluence',
+    'Observed SEP Peak Intensity (Onset Peak)',
+    'Observed SEP Peak Intensity (Onset Peak) Time',
+    'Observed SEP Peak Intensity Max (Max Flux)',
+    'Observed SEP Peak Intensity Max (Max Flux) Time',
+    'Predicted SEP Peak Intensity (Onset Peak)',
+    'Predicted SEP Peak Intensity Max (Max Flux)',
+    'Predicted SEP Probability',
+    'Observatory',
+]
+
+
+def _load_sphinx_df_from_partitions(partition_path):
+    """ Read only MAILSPHINX_NEEDED_COLUMNS directly from the partitioned
+        Parquet data written by sphinxval, instead of loading the full
+        flat SPHINX_evaluated.pkl (70+ columns).
+
+        UNLIKE pushvivid's conversion code, mailsphinx genuinely needs
+        ALL-TIME history (see build_overview.py's "All Time" row) --
+        there is no bounded date range to filter by at read time. This
+        narrows COLUMNS, not ROWS: every partition file still gets read,
+        just with a much smaller width. Total row count, and therefore
+        the irreducible part of peak memory, is unchanged from the flat
+        pkl approach -- this reduces memory per row, not the number of
+        rows held at once.
+
+        Uses partition_io.py, VENDORED into this repo (utils/
+        partition_io.py, alongside this file) rather than imported live
+        from the sphinxval repo. sphinxval, pushvivid, and mailsphinx are
+        separate git repositories -- a live cross-repo import has no
+        version pinning, is invisible to this repo's own tests, and
+        breaks if sphinxval's internal layout changes (this happened
+        once already). See partition_io.py's own module docstring for
+        the full rationale. If you fix a bug in partition_io.py,
+        propagate the same fix to all three vendored copies (sphinxval,
+        pushvivid, mailsphinx).
+
+        NOTE: mailsphinx uses its OWN separate venv (see run_mailsphinx.sh:
+        "mailsphinx USES ITS OWN VENV, SEPARATE FROM THE SHARED PIPELINE
+        VENV"). pandas and pyarrow must be installed there for this
+        import to succeed -- partition_io.py's dependency footprint is
+        deliberately small (pandas, pyarrow, astropy.units only).
+    """
+    from ..utils import partition_io
+
+    print(f'Reading {len(MAILSPHINX_NEEDED_COLUMNS)} columns directly from '
+          f'partitions at {partition_path} (no full flat pkl loaded).')
+    df = partition_io.read_all_partitions(partition_path, 'SPHINX_evaluated',
+        columns=MAILSPHINX_NEEDED_COLUMNS)
+    return df
+
+
 def custom_warning_handler(message, category, filename, lineno, file=None, line=None):
     print('Warning: ', message)
     print('Category: ', category.__name__)
     print('File: ', filename, 'Line: ', lineno)
     traceback.print_stack()
 
-def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dataframe_filename=None):
+def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dataframe_filename=None, partition_path=None):
     """
     Writes the text that makes up the email body.
 
@@ -37,6 +110,13 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
     end_datetime : datetime
     convert_images_to_base64 : bool
     dataframe_filename : str or None
+        Path to a flat SPHINX_evaluated.pkl. Ignored if partition_path is
+        given.
+    partition_path : str or None
+        Directory holding sphinxval's partitioned SPHINX_evaluated data.
+        If given, only MAILSPHINX_NEEDED_COLUMNS are read directly from
+        partitions -- the full flat pkl is never loaded. Takes
+        precedence over dataframe_filename if both are given.
 
     Returns
     -------
@@ -46,7 +126,10 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
     #warnings.showwarning = custom_warning_handler
 
     warnings.filterwarnings('ignore', category=pd.errors.DtypeWarning)
-    sphinx_df = pd.read_pickle(dataframe_filename)
+    if partition_path:
+        sphinx_df = _load_sphinx_df_from_partitions(partition_path)
+    else:
+        sphinx_df = pd.read_pickle(dataframe_filename)
 
     # EXCLUDE MODELS
     for model in config.exclude_models:

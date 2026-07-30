@@ -1,5 +1,5 @@
 
-m ..utils import config
+from ..utils import config
 from ..utils import format_objects
 
 import datetime

@@ -1,4 +1,4 @@
-onfiguration file
+# configuration file
 import datetime
 import os
 import pytz
@@ -332,7 +332,7 @@ class Order:
             # 'threshold.1.0.units.1 / (cm2 s sr)'),
             # (1e-2, 1e+5)),
             ('min.100.0.max.-1.0.units.MeV',
-             'threshold.1.0.units.1 / (cm2 s sr)'
+             'threshold.1.0.units.1 / (cm2 s sr)',
              (1e-2, 1e+3)),
         ]
 order = Order()
