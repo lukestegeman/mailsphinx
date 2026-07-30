@@ -16,7 +16,7 @@ import pytz
 import shutil
 import tarfile
 
-def main(do_send_email=False, start_datetime=None, end_datetime=None, convert_images_to_base64=False, dataframe_filename=None, save_directory_sub='', external_report_location=None):
+def main(do_send_email=False, start_datetime=None, end_datetime=None, convert_images_to_base64=False, dataframe_filename=None, partition_path=None, save_directory_sub='', external_report_location=None):
     """
     Main MailSPHINX function.
         Compiles HTML reports, 
@@ -30,10 +30,21 @@ def main(do_send_email=False, start_datetime=None, end_datetime=None, convert_im
     start_datetime : NoneType, datetime
 
     end_datetime : NoneType, datetime 
+
+    dataframe_filename : str or None
+        Path to a flat SPHINX_evaluated.pkl. Ignored if partition_path is
+        given.
+
+    partition_path : str or None
+        Directory holding sphinxval's partitioned SPHINX_evaluated data.
+        If given, only the columns mailsphinx actually needs are read
+        directly from partitions -- the full flat pkl is never loaded.
+        Takes precedence over dataframe_filename if both are given.
     """
     
-    # DEFAULT TO CONFIG-SPECIFIED DATAFRAME
-    if dataframe_filename is None:
+    # DEFAULT TO CONFIG-SPECIFIED DATAFRAME IF NEITHER dataframe_filename
+    # NOR partition_path WAS SUPPLIED
+    if dataframe_filename is None and partition_path is None:
         dataframe_filename = config.path.dataframe
         print('SPHINX dataframe is ', config.path.dataframe)
 
@@ -65,7 +76,7 @@ def main(do_send_email=False, start_datetime=None, end_datetime=None, convert_im
     # start_datetime AND end_datetime ARE KNOWN
    
     # GENERATE EMAIL CONTENT 
-    html = build_text.build_text(start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=convert_images_to_base64, dataframe_filename=dataframe_filename)
+    html = build_text.build_text(start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=convert_images_to_base64, dataframe_filename=dataframe_filename, partition_path=partition_path)
     
     # SAVE IN FILESYSTEM
     save_directory = os.path.join(config.path.email_storage, save_directory_sub)
@@ -137,5 +148,4 @@ def batch(directory, file_pattern_startswith=None, save_directory_sub='batch'):
         main(do_send_email=False, start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=True, dataframe_filename=dataframe_path, save_directory_sub=save_directory_sub, external_report_location='./.tmp/reports/')
         
 if __name__ == '__main__':
-    None 
-
+    None

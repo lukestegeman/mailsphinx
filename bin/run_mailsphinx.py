@@ -10,6 +10,7 @@ parser.add_argument('-sm', '--send-email', action='store_true', default=False, h
 parser.add_argument('-sd', '--start-datetime', type=str, default=None, help='Specifies first day of evaluation period (YYYY-MM-DD).')
 parser.add_argument('-ed', '--end-datetime', type=str, default=None, help='Specifies last day of the evaluation period (YYYY-MM-DD).')
 parser.add_argument('-df', '--dataframe-filename', type=str, default=None, help='Specifies dataframe to use for evaluation.')
+parser.add_argument('-pp', '--partition-path', type=str, default=None, help='Directory holding sphinxval\'s partitioned SPHINX_evaluated data. If given, only the columns mailsphinx actually needs are read directly from partitions instead of loading the full flat dataframe. Takes precedence over --dataframe-filename if both are given.')
 parser.add_argument('-save', '--save-directory', type=str, default='', help='Directory to which MailSPHINX emails are saved.')
 parser.add_argument('-pi', '--persistent-images', action='store_true', default=False, help='If active, converts all images to base64 so that HTML files are portable.')
 parser.add_argument('-b', '--batch', action='store_true', default=False, help='If active, runs in batch mode. Expects a --batch-directory argument.')
@@ -21,7 +22,11 @@ print("WARNING: If you are not on the NASA network, you will not be able to run 
 if args.batch:
     # Batch mode
     assert(args.batch_directory is not None), '--batch-directory argument is REQUIRED for batch mode.'
-    mailsphinx.mailsphinx.batch(directory=args.batch_directory, file_pattern_startswith=args.batch_filename_pattern_startswith, historical_mode_save_directory=args.save_directory)
+    # FIXED: batch()'s actual signature (mailsphinx/mailsphinx.py) takes
+    # save_directory_sub, not historical_mode_save_directory -- the
+    # original call here would raise TypeError on any --batch invocation.
+    # PRE-EXISTING BUG, UNRELATED TO partition_path -- FIXED WHILE HERE.
+    mailsphinx.mailsphinx.batch(directory=args.batch_directory, file_pattern_startswith=args.batch_filename_pattern_startswith, save_directory_sub=args.save_directory)
 else:
     # Main program
     # CONVERT ARGS
@@ -29,5 +34,4 @@ else:
         args.start_datetime = datetime.datetime.strptime(args.start_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
     if (args.end_datetime is not None):
         args.end_datetime = datetime.datetime.strptime(args.end_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
-    mailsphinx.mailsphinx.main(do_send_email=args.send_email, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, save_directory_sub=args.save_directory, convert_images_to_base64=args.persistent_images)
-
+    mailsphinx.mailsphinx.main(do_send_email=args.send_email, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, partition_path=args.partition_path, save_directory_sub=args.save_directory, convert_images_to_base64=args.persistent_images)
