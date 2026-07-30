@@ -157,9 +157,19 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         weekly_forecasts['Energy Channel Key'] = pd.Categorical(weekly_forecasts['Energy Channel Key'], categories=config.order.energy_key_order, ordered=True)
         weekly_forecasts = weekly_forecasts.sort_values('Energy Channel Key')
 
+        # CHECK FOR NEW EVENTS IN THIS REPORT'S PERIOD BEFORE BUILDING THE
+        # HEADER, SO THE NEW-EVENTS SUMMARY LINE CAN BE SHOWN IMMEDIATELY
+        # BENEATH THE EVALUATION PERIOD. REUSED BELOW FOR THE Events
+        # SECTION FURTHER DOWN, SO THIS IS ONLY COMPUTED ONCE.
+        event_forecasts, event = build_event.check_for_event(sphinx_df, start_datetime, end_datetime)
+        events, _ = build_event.get_unique_events(event_forecasts)
+        new_event_counts = build_event.count_unique_events_by_channel(
+            sphinx_df, start_datetime=start_datetime, end_datetime=end_datetime)
+
         # WRITE HTML
         html = ''
-        html += build_html.build_head_section()
+        new_events_line_html = build_event.build_new_events_line(new_event_counts)
+        html += build_html.build_head_section(new_events_line=new_events_line_html)
 
         # TABLE OF CONTENTS — LIST TOP-LEVEL SECTIONS WITH JUMP LINKS.
         # THE REleASE NOTE APPEARS HERE SINCE IT APPLIES ACROSS SECTIONS.

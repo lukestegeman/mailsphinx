@@ -155,6 +155,36 @@ def _sphinxval_metric(metrics_df, cat, flav, energy_key, threshold_key, column):
     return float(val) if pd.notna(val) else np.nan
 
 
+_HITS_COL = "All Clear 'True Positives' (Hits)"
+_MISSES_COL = "All Clear 'False Negatives' (Misses)"
+
+
+def _observed_event_count(ac_df, cat, flav, energy_key, threshold_key):
+    """Return the number of observed SEP events for this model, energy
+    channel, and threshold, derived from all_clear_metrics.pkl's Hits
+    (correctly predicted events) plus Misses (events the model failed
+    to predict) -- together, every observed event regardless of whether
+    the model caught it. Returns None if unavailable."""
+    if ac_df.empty or 'Model Category' not in ac_df.columns:
+        return None
+    if _HITS_COL not in ac_df.columns or _MISSES_COL not in ac_df.columns:
+        return None
+    mask = (
+        (ac_df['Model Category'] == cat) &
+        (ac_df['Model Flavor'] == flav) &
+        (ac_df['Energy Channel'].apply(_normalize_energy_key) == energy_key) &
+        (ac_df['Threshold'] == threshold_key)
+    )
+    sub = ac_df[mask]
+    if sub.empty:
+        return None
+    hits = pd.to_numeric(sub[_HITS_COL], errors='coerce').sum()
+    misses = pd.to_numeric(sub[_MISSES_COL], errors='coerce').sum()
+    if pd.isna(hits) and pd.isna(misses):
+        return None
+    return int(np.nan_to_num(hits) + np.nan_to_num(misses))
+
+
 # -----------------------------------------------------------------------
 # ALL-TIME DELTA PKL
 # -----------------------------------------------------------------------
@@ -235,6 +265,8 @@ def _compute_model_metrics(df):
                 for label, col in _AC_METRICS:
                     metrics[label] = _sphinxval_metric(
                         ac_df, cat, flav, energy_key, threshold_key, col)
+                metrics['_n_events'] = _observed_event_count(
+                    ac_df, cat, flav, energy_key, threshold_key)
                 for label, col in _PROB_METRICS:
                     metrics[label] = _sphinxval_metric(
                         prob_df, cat, flav, energy_key, threshold_key, col)
@@ -262,6 +294,7 @@ def _build_channel_metrics_table(current, previous, metric_names,
         if _is_excluded(metrics_config, section_key, cat, flav):
             continue
         prev_metrics = previous.get((cat, flav, ekey, tkey), {})
+        n_events = metrics.get('_n_events')
         row = [cat, flav]
         for m in metric_names:
             cur_val = metrics.get(m, np.nan)
@@ -330,13 +363,13 @@ def build_metrics_section(df):
     buf.write(build_html.build_divider())
 
     ac_metrics = ['Hit Rate', 'FAR', 'FAER', 'HSS', 'TSS']
-    ac_headers = ['Model Category', 'Model Flavor'] + ac_metrics
+    ac_headers = ['Model Category', 'Model Variant'] + ac_metrics
     buf.write(_build_metrics_section_tables(
         current, previous, ac_metrics, _SECTION_ALL_CLEAR,
         'All Clear Metrics', ac_headers, metrics_config))
 
     prob_metrics = ['Brier Score', 'AUC']
-    prob_headers = ['Model Category', 'Model Flavor'] + prob_metrics
+    prob_headers = ['Model Category', 'Model Variant'] + prob_metrics
     buf.write(_build_metrics_section_tables(
         current, previous, prob_metrics, _SECTION_PROBABILITY,
         'Probability Metrics', prob_headers, metrics_config))
@@ -345,7 +378,7 @@ def build_metrics_section(df):
         if display_title is None:
             continue  # SUPPRESSED SECTION
         flux_metrics = [f'MLE ({flux_label})', f'WF2 ({flux_label})', f'WF10 ({flux_label})']
-        flux_headers = ['Model Category', 'Model Flavor', 'MLE', 'WF2', 'WF10']
+        flux_headers = ['Model Category', 'Model Variant', 'MLE', 'WF2', 'WF10']
         buf.write(_build_metrics_section_tables(
             current, previous, flux_metrics, section_key,
             display_title, flux_headers, metrics_config))

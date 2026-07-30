@@ -65,7 +65,7 @@ def build_evaluation_breakdown(breakdown_sections):
         HTML for the Evaluation Breakdown section.
     """
     ne_abbrev_list = list(NE_ABBREVIATIONS.values())
-    breakdown_headers = ['Model Category', 'Model Flavor'] + ne_abbrev_list
+    breakdown_headers = ['Model Category', 'Model Variant'] + ne_abbrev_list
 
     text = build_html.build_section_title('Evaluation Breakdown')
     text += build_html.build_regular_text(

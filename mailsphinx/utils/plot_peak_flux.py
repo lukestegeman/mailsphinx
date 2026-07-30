@@ -176,7 +176,7 @@ def plot_peak_flux_single(energy_channel_string, threshold_flux_string, df,
         plt.savefig(save, dpi=config.image.dpi, bbox_inches='tight')
         plt.close()
 
-    return True, build_html.build_image(save, write_as_base64=convert_image_to_base64)
+    return True, build_html.build_image(save, write_as_base64=convert_image_to_base64, native_size=True)
 
 
 def build_peak_flux_legend(df, save, convert_image_to_base64=False):
@@ -208,4 +208,4 @@ def build_peak_flux_legend(df, save, convert_image_to_base64=False):
         plt.savefig(save, dpi=config.image.dpi, bbox_inches='tight')
         plt.close()
 
-    return build_html.build_image(save, write_as_base64=convert_image_to_base64)
+    return build_html.build_image(save, write_as_base64=convert_image_to_base64, native_size=True)
