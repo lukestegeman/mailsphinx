@@ -21,6 +21,7 @@ plt.rcParams['font.size'] = config.plot.fontsize
 # FUNCTIONS' PLOTTING CODE SO IT DOES NOT AFFECT ANY OTHER PLOT OR
 # CHANGE THE GLOBAL rcParams STATE.
 PEAK_FLUX_FONTSIZE = 10
+PEAK_FLUX_DPI = config.image.dpi * 2
 
 
 # DATA TYPE DEFINITIONS: (display_name, pred_col, obs_col, marker_key)
@@ -173,7 +174,7 @@ def plot_peak_flux_single(energy_channel_string, threshold_flux_string, df,
         ax.yaxis.set_minor_formatter(mticker.NullFormatter())
 
         plt.tight_layout()
-        plt.savefig(save, dpi=config.image.dpi, bbox_inches='tight')
+        plt.savefig(save, dpi=PEAK_FLUX_DPI, bbox_inches='tight')
         plt.close()
 
     return True, build_html.build_image(save, write_as_base64=convert_image_to_base64, native_size=True)
@@ -205,7 +206,7 @@ def build_peak_flux_legend(df, save, convert_image_to_base64=False):
         ax.legend(handles=handles, loc='center', framealpha=config.plot.opacity,
                   fontsize='small', ncol=ncol, columnspacing=1.0, handlelength=1.5)
         plt.tight_layout()
-        plt.savefig(save, dpi=config.image.dpi, bbox_inches='tight')
+        plt.savefig(save, dpi=PEAK_FLUX_DPI, bbox_inches='tight')
         plt.close()
 
     return build_html.build_image(save, write_as_base64=convert_image_to_base64, native_size=True)
