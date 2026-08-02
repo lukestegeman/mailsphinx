@@ -185,12 +185,14 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         release_note = None
         if has_release:
             release_note = (
-                '<em>Note on HESPERIA REleASE:</em> REleASE forecasts are issued for '
-                '15.8&#8209;39.8&nbsp;MeV protons exceeding 0.1&nbsp;pfu/MeV, but are '
-                'validated here against &gt;10&nbsp;MeV protons exceeding 10&nbsp;pfu. '
-                'Predicted peak fluxes from REleASE may be correlated with observed values '
-                'but are not expected to match numerically, as they represent different '
-                'energy channels and units.'
+                '<em>Note on HESPERIA REleASE:</em> REleASE forecasts of '
+                '15.8&#8209;39.8&nbsp;MeV protons exceeding 0.1&nbsp;pfu/MeV are validated '
+                'here against &gt;10&nbsp;MeV protons exceeding 10&nbsp;pfu. REleASE '
+                'forecasts of 28.2&#8209;50.1&nbsp;MeV protons exceeding 0.1&nbsp;pfu/MeV '
+                'are validated against both &gt;10&nbsp;MeV protons exceeding 10&nbsp;pfu '
+                'and &gt;100&nbsp;MeV protons exceeding 1&nbsp;pfu. Predicted peak fluxes '
+                'from REleASE may be correlated with observed values but are not expected '
+                'to match numerically, as they represent different energy channels and units.'
             )
         html += build_html.build_toc(toc_sections, notes=release_note)
 
@@ -198,7 +200,7 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         event_forecasts, event = build_event.check_for_event(sphinx_df, start_datetime, end_datetime)
         events, _ = build_event.get_unique_events(event_forecasts)
         if event:
-            html += build_event.build_event_section(event_forecasts, end_datetime)
+            html += build_event.build_event_section(event_forecasts, start_datetime, end_datetime)
         contingency_html, breakdown_sections = tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, start_datetime, end_datetime)
         html += contingency_html
         html += build_space_weather_summary.build_space_weather_summary(start_datetime=start_datetime, end_datetime=end_datetime, convert_image_to_base64=convert_images_to_base64)

@@ -5,6 +5,7 @@ from ..utils import manipulate_keys
 from ..utils import scoreboard_call
 from ..utils import tabulate_contingency_metrics
 
+import datetime
 import pandas as pd
 
 # BUILD EVENT SECTION
@@ -28,13 +29,57 @@ def check_for_event(df, start_datetime, end_datetime):
     event = len(event_forecasts) > 0
     return event_forecasts, event 
 
-def build_ccmc_scoreboard_links(event_forecasts, end_datetime):
+def _weekly_chunk_anchors(start_datetime, end_datetime, days_per_chunk=7):
+    """Generate a list of chunk-end anchor dates covering
+    [start_datetime, end_datetime) in steps of at most days_per_chunk
+    days each. scoreboard_call takes a single anchor date and shows the
+    scoreboard for the week ending there (looking backward) -- it has
+    no explicit start+end range parameter -- so covering a longer
+    period means generating one anchor per <=7-day chunk. For a normal
+    single-week report (the common case), this produces exactly one
+    anchor, identical to the previous behavior."""
+    anchors = []
+    chunk_start = start_datetime
+    delta = datetime.timedelta(days=days_per_chunk)
+    while chunk_start < end_datetime:
+        chunk_end = min(chunk_start + delta, end_datetime)
+        anchors.append(chunk_end)
+        chunk_start = chunk_end
+    return anchors
+
+
+def build_ccmc_scoreboard_links(event_forecasts, start_datetime, end_datetime):
     model_list = event_forecasts['Model'].unique().tolist()
     model_list.sort()
-    url_probability = scoreboard_call.scoreboard_call(model_list, end_datetime, 'Probability')
-    url_intensity = scoreboard_call.scoreboard_call(model_list, end_datetime, 'Intensity')
-    text = build_html.build_html_shortlink(url_probability, 'CCMC SEP Probability Scoreboard') + '<br>'
-    text += build_html.build_html_shortlink(url_intensity, 'CCMC SEP Intensity Scoreboard')
+
+    anchors = _weekly_chunk_anchors(start_datetime, end_datetime)
+
+    #NORMAL CASE (REPORT PERIOD <= 1 WEEK): EXACTLY ONE ANCHOR, IDENTICAL
+    #OUTPUT TO BEFORE -- NO DATE LABEL, SINCE THERE'S NOTHING TO
+    #DISAMBIGUATE BETWEEN.
+    if len(anchors) <= 1:
+        url_probability = scoreboard_call.scoreboard_call(model_list, end_datetime, 'Probability')
+        url_intensity = scoreboard_call.scoreboard_call(model_list, end_datetime, 'Intensity')
+        text = build_html.build_html_shortlink(url_probability, 'CCMC SEP Probability Scoreboard') + '<br>'
+        text += build_html.build_html_shortlink(url_intensity, 'CCMC SEP Intensity Scoreboard')
+        return text
+
+    #MULTI-WEEK REPORT PERIOD: ONE LABELED PAIR OF LINKS PER <=7-DAY
+    #CHUNK, SO THE USER CAN JUMP TO WHICHEVER WEEK THEY'RE INTERESTED
+    #IN. LABELED BY THE CHUNK'S END DATE (THE ANCHOR scoreboard_call
+    #ACTUALLY RECEIVES) RATHER THAN A CLAIMED START-END RANGE, SINCE
+    #scoreboard_call's OWN DOCUMENTED CONTRACT IS "SHOWS THE WEEK ENDING
+    #AT THIS DATE" -- HOW CCMC ITSELF COMPUTES THAT WINDOW INTERNALLY
+    #ISN'T SOMETHING THIS CODE CAN VERIFY, SO THE LABEL ONLY CLAIMS WHAT
+    #IS ACTUALLY KNOWN.
+    text = ''
+    for anchor in anchors:
+        label = 'Week ending ' + anchor.strftime('%Y-%m-%d')
+        url_probability = scoreboard_call.scoreboard_call(model_list, anchor, 'Probability')
+        url_intensity = scoreboard_call.scoreboard_call(model_list, anchor, 'Intensity')
+        text += build_html.build_regular_text(label)
+        text += build_html.build_html_shortlink(url_probability, 'CCMC SEP Probability Scoreboard') + '<br>'
+        text += build_html.build_html_shortlink(url_intensity, 'CCMC SEP Intensity Scoreboard') + '<br><br>'
     return text
 
 def _normalize_energy_key(energy_key):
@@ -208,11 +253,11 @@ def build_model_event_forecasts(event_forecasts):
             text += tabulate_contingency_metrics.build_single_stat_contingency_table(df_energy, mode='miss', header=contingency_stat_header, display_header=contingency_stat_display_header)
     return text
 
-def build_event_section(event_forecasts, end_datetime):
+def build_event_section(event_forecasts, start_datetime, end_datetime):
     text = ''
     text += build_html.build_section_title('Events')
     text += build_html.build_paragraph_title('Scoreboard Links')
-    text += build_ccmc_scoreboard_links(event_forecasts, end_datetime)
+    text += build_ccmc_scoreboard_links(event_forecasts, start_datetime, end_datetime)
     text += build_event_summary(event_forecasts)
     text += build_html.build_divider()
     return text
