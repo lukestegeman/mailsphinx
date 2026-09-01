@@ -23,6 +23,7 @@ import pandas as pd
 from ..utils import build_html
 from ..utils import config
 from ..utils import manipulate_keys
+from ..utils import filter_objects
 
 
 # -----------------------------------------------------------------------
@@ -112,18 +113,38 @@ def _load_sphinxval_metrics(filename):
     if not os.path.exists(path):
         return pd.DataFrame()
     try:
-        return pd.read_pickle(path)
+        df = pd.read_pickle(path)
     except Exception:
         return pd.DataFrame()
+    if df.empty or 'Model' not in df.columns:
+        return df
+    # SPLIT THE RAW Model COLUMN THE SAME WAY THE MAIN SPHINX DATAFRAME
+    # IS SPLIT (filter_objects.categorize_column), SO LOOKUPS CAN MATCH
+    # ON Model Category/Model Flavor RATHER THAN RECONSTRUCTING A
+    # "cat flav" STRING AND COMPARING IT AGAINST THE RAW, UNMODIFIED
+    # Model COLUMN. A RECONSTRUCTED STRING ONLY MATCHES THE RAW NAME BY
+    # COINCIDENCE, WHEN THE ORIGINAL SEPARATOR HAPPENED TO BE A SPACE
+    # (e.g. "SAWS-ASPECS flare"). MODELS THAT USE AN UNDERSCORE AS AN
+    # INTERNAL SEPARATOR BEYOND THE FIRST SPLIT (e.g. "MAG4_SHARP_HMI"
+    # -> cat "MAG4", flav "SHARP_HMI" -> reconstructed "MAG4 SHARP_HMI")
+    # NEVER MATCH THEIR OWN RAW NAME, AND EVERY METRIC FOR THAT MODEL
+    # SILENTLY RENDERS AS N/A.
+    df = filter_objects.categorize_column(df, 'Model', 'Model Category', 'Model Flavor')
+    return df
 
 
-def _sphinxval_metric(metrics_df, model_name, energy_key, threshold_key, column):
+def _sphinxval_metric(metrics_df, cat, flav, energy_key, threshold_key, column):
     """Look up a metric for a specific model + energy channel + threshold.
-    Normalizes the energy key so REleASE mismatch keys match the base channel."""
-    if metrics_df.empty or 'Model' not in metrics_df.columns or column not in metrics_df.columns:
+    Normalizes the energy key so REleASE mismatch keys match the base channel.
+    Matches on Model Category/Model Flavor (derived from the same
+    splitting logic used on the main dataframe), not on a reconstructed
+    "cat flav" string compared against the raw Model column -- see
+    _load_sphinxval_metrics for why that comparison is unreliable."""
+    if metrics_df.empty or 'Model Category' not in metrics_df.columns or column not in metrics_df.columns:
         return np.nan
     mask = (
-        (metrics_df['Model'] == model_name) &
+        (metrics_df['Model Category'] == cat) &
+        (metrics_df['Model Flavor'] == flav) &
         (metrics_df['Energy Channel'].apply(_normalize_energy_key) == energy_key) &
         (metrics_df['Threshold'] == threshold_key)
     )
@@ -132,6 +153,36 @@ def _sphinxval_metric(metrics_df, model_name, energy_key, threshold_key, column)
         return np.nan
     val = pd.to_numeric(sub[column], errors='coerce').mean()
     return float(val) if pd.notna(val) else np.nan
+
+
+_HITS_COL = "All Clear 'True Positives' (Hits)"
+_MISSES_COL = "All Clear 'False Negatives' (Misses)"
+
+
+def _observed_event_count(ac_df, cat, flav, energy_key, threshold_key):
+    """Return the number of observed SEP events for this model, energy
+    channel, and threshold, derived from all_clear_metrics.pkl's Hits
+    (correctly predicted events) plus Misses (events the model failed
+    to predict) -- together, every observed event regardless of whether
+    the model caught it. Returns None if unavailable."""
+    if ac_df.empty or 'Model Category' not in ac_df.columns:
+        return None
+    if _HITS_COL not in ac_df.columns or _MISSES_COL not in ac_df.columns:
+        return None
+    mask = (
+        (ac_df['Model Category'] == cat) &
+        (ac_df['Model Flavor'] == flav) &
+        (ac_df['Energy Channel'].apply(_normalize_energy_key) == energy_key) &
+        (ac_df['Threshold'] == threshold_key)
+    )
+    sub = ac_df[mask]
+    if sub.empty:
+        return None
+    hits = pd.to_numeric(sub[_HITS_COL], errors='coerce').sum()
+    misses = pd.to_numeric(sub[_MISSES_COL], errors='coerce').sum()
+    if pd.isna(hits) and pd.isna(misses):
+        return None
+    return int(np.nan_to_num(hits) + np.nan_to_num(misses))
 
 
 # -----------------------------------------------------------------------
@@ -209,19 +260,20 @@ def _compute_model_metrics(df):
         for cat, cat_group in channel_df.groupby('Model Category'):
             for flav, _ in cat_group.groupby('Model Flavor'):
                 key = (cat, flav, energy_key, threshold_key)
-                model_name = f'{cat} {flav}'.strip()
 
                 metrics = {}
                 for label, col in _AC_METRICS:
                     metrics[label] = _sphinxval_metric(
-                        ac_df, model_name, energy_key, threshold_key, col)
+                        ac_df, cat, flav, energy_key, threshold_key, col)
+                metrics['_n_events'] = _observed_event_count(
+                    ac_df, cat, flav, energy_key, threshold_key)
                 for label, col in _PROB_METRICS:
                     metrics[label] = _sphinxval_metric(
-                        prob_df, model_name, energy_key, threshold_key, col)
+                        prob_df, cat, flav, energy_key, threshold_key, col)
                 for _, flux_label, _, _ in _FLUX_SECTIONS:
                     for label, col in _FLUX_METRICS:
                         metrics[f'{label} ({flux_label})'] = _sphinxval_metric(
-                            flux_dfs[flux_label], model_name, energy_key, threshold_key, col)
+                            flux_dfs[flux_label], cat, flav, energy_key, threshold_key, col)
 
                 results[key] = metrics
     return results
@@ -242,6 +294,7 @@ def _build_channel_metrics_table(current, previous, metric_names,
         if _is_excluded(metrics_config, section_key, cat, flav):
             continue
         prev_metrics = previous.get((cat, flav, ekey, tkey), {})
+        n_events = metrics.get('_n_events')
         row = [cat, flav]
         for m in metric_names:
             cur_val = metrics.get(m, np.nan)
@@ -310,13 +363,13 @@ def build_metrics_section(df):
     buf.write(build_html.build_divider())
 
     ac_metrics = ['Hit Rate', 'FAR', 'FAER', 'HSS', 'TSS']
-    ac_headers = ['Model Category', 'Model Flavor'] + ac_metrics
+    ac_headers = ['Model Category', 'Model Variant'] + ac_metrics
     buf.write(_build_metrics_section_tables(
         current, previous, ac_metrics, _SECTION_ALL_CLEAR,
         'All Clear Metrics', ac_headers, metrics_config))
 
     prob_metrics = ['Brier Score', 'AUC']
-    prob_headers = ['Model Category', 'Model Flavor'] + prob_metrics
+    prob_headers = ['Model Category', 'Model Variant'] + prob_metrics
     buf.write(_build_metrics_section_tables(
         current, previous, prob_metrics, _SECTION_PROBABILITY,
         'Probability Metrics', prob_headers, metrics_config))
@@ -325,7 +378,7 @@ def build_metrics_section(df):
         if display_title is None:
             continue  # SUPPRESSED SECTION
         flux_metrics = [f'MLE ({flux_label})', f'WF2 ({flux_label})', f'WF10 ({flux_label})']
-        flux_headers = ['Model Category', 'Model Flavor', 'MLE', 'WF2', 'WF10']
+        flux_headers = ['Model Category', 'Model Variant', 'MLE', 'WF2', 'WF10']
         buf.write(_build_metrics_section_tables(
             current, previous, flux_metrics, section_key,
             display_title, flux_headers, metrics_config))

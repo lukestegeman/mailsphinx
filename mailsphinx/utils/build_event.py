@@ -5,6 +5,7 @@ from ..utils import manipulate_keys
 from ..utils import scoreboard_call
 from ..utils import tabulate_contingency_metrics
 
+import datetime
 import pandas as pd
 
 # BUILD EVENT SECTION
@@ -28,14 +29,162 @@ def check_for_event(df, start_datetime, end_datetime):
     event = len(event_forecasts) > 0
     return event_forecasts, event 
 
-def build_ccmc_scoreboard_links(event_forecasts, end_datetime):
+def _weekly_chunk_anchors(start_datetime, end_datetime, days_per_chunk=7):
+    """Generate a list of chunk-end anchor dates covering
+    [start_datetime, end_datetime) in steps of at most days_per_chunk
+    days each. scoreboard_call takes a single anchor date and shows the
+    scoreboard for the week ending there (looking backward) -- it has
+    no explicit start+end range parameter -- so covering a longer
+    period means generating one anchor per <=7-day chunk. For a normal
+    single-week report (the common case), this produces exactly one
+    anchor, identical to the previous behavior."""
+    anchors = []
+    chunk_start = start_datetime
+    delta = datetime.timedelta(days=days_per_chunk)
+    while chunk_start < end_datetime:
+        chunk_end = min(chunk_start + delta, end_datetime)
+        anchors.append(chunk_end)
+        chunk_start = chunk_end
+    return anchors
+
+
+def build_ccmc_scoreboard_links(event_forecasts, start_datetime, end_datetime):
     model_list = event_forecasts['Model'].unique().tolist()
     model_list.sort()
-    url_probability = scoreboard_call.scoreboard_call(model_list, end_datetime, 'Probability')
-    url_intensity = scoreboard_call.scoreboard_call(model_list, end_datetime, 'Intensity')
-    text = build_html.build_html_shortlink(url_probability, 'CCMC SEP Probability Scoreboard') + '<br>'
-    text += build_html.build_html_shortlink(url_intensity, 'CCMC SEP Intensity Scoreboard')
+
+    anchors = _weekly_chunk_anchors(start_datetime, end_datetime)
+
+    #NORMAL CASE (REPORT PERIOD <= 1 WEEK): EXACTLY ONE ANCHOR, IDENTICAL
+    #OUTPUT TO BEFORE -- NO DATE LABEL, SINCE THERE'S NOTHING TO
+    #DISAMBIGUATE BETWEEN.
+    if len(anchors) <= 1:
+        url_probability = scoreboard_call.scoreboard_call(model_list, end_datetime, 'Probability')
+        url_intensity = scoreboard_call.scoreboard_call(model_list, end_datetime, 'Intensity')
+        text = build_html.build_html_shortlink(url_probability, 'CCMC SEP Probability Scoreboard') + '<br>'
+        text += build_html.build_html_shortlink(url_intensity, 'CCMC SEP Intensity Scoreboard')
+        return text
+
+    #MULTI-WEEK REPORT PERIOD: ONE LABELED PAIR OF LINKS PER <=7-DAY
+    #CHUNK, SO THE USER CAN JUMP TO WHICHEVER WEEK THEY'RE INTERESTED
+    #IN. LABELED BY THE CHUNK'S END DATE (THE ANCHOR scoreboard_call
+    #ACTUALLY RECEIVES) RATHER THAN A CLAIMED START-END RANGE, SINCE
+    #scoreboard_call's OWN DOCUMENTED CONTRACT IS "SHOWS THE WEEK ENDING
+    #AT THIS DATE" -- HOW CCMC ITSELF COMPUTES THAT WINDOW INTERNALLY
+    #ISN'T SOMETHING THIS CODE CAN VERIFY, SO THE LABEL ONLY CLAIMS WHAT
+    #IS ACTUALLY KNOWN.
+    text = ''
+    for anchor in anchors:
+        label = 'Week ending ' + anchor.strftime('%Y-%m-%d')
+        url_probability = scoreboard_call.scoreboard_call(model_list, anchor, 'Probability')
+        url_intensity = scoreboard_call.scoreboard_call(model_list, anchor, 'Intensity')
+        text += build_html.build_regular_text(label)
+        text += build_html.build_html_shortlink(url_probability, 'CCMC SEP Probability Scoreboard') + '<br>'
+        text += build_html.build_html_shortlink(url_intensity, 'CCMC SEP Intensity Scoreboard') + '<br><br>'
     return text
+
+def _normalize_energy_key(energy_key):
+    """Strip the mismatch suffix so REleASE mismatch keys group under
+    their base channel."""
+    return energy_key.split('_min.')[0]
+
+
+def _channel_label(energy_key, threshold_key):
+    """Return a human-readable label for an energy/threshold pair."""
+    energy_str = manipulate_keys.convert_energy_key_to_string(energy_key)
+    threshold_str = manipulate_keys.convert_threshold_key_to_string(threshold_key)
+    return f'{energy_str}, {threshold_str}'
+
+
+def count_unique_events_by_channel(df, start_datetime=None, end_datetime=None):
+    """Count unique observed SEP events per configured (energy channel,
+    threshold) pair within df, optionally restricted to threshold
+    crossings within [start_datetime, end_datetime).
+
+    Uses the same event definition, energy-key normalization, and
+    mismatch exclusion as check_for_event/get_unique_events, so counts
+    here are directly comparable to the Events section and to the
+    per-channel breakdowns elsewhere in the report.
+
+    Parameters
+    ----------
+    df : dataframe
+        SPHINX dataframe (or any subset of it) to count events within.
+    start_datetime, end_datetime : datetime or None
+        If given, only threshold crossings in this range are counted.
+        If both are None, every observed event in df is counted
+        (suitable for an "All Time" count).
+
+    Returns
+    -------
+    counts : dict
+        Maps a channel label (e.g. "> 10 MeV, > 10 pfu") to the number
+        of distinct observed events for that channel.
+    """
+    df = df.copy()
+    df['Observed SEP Threshold Crossing Time'] = df['Observed SEP Threshold Crossing Time'].fillna(pd.NaT)
+
+    mask = (df['Observed SEP All Clear'] == False)
+    if start_datetime is not None:
+        mask &= (df['Observed SEP Threshold Crossing Time'] >= start_datetime)
+    if end_datetime is not None:
+        mask &= (df['Observed SEP Threshold Crossing Time'] < end_datetime)
+    event_forecasts = df[mask]
+
+    configured = {(ek, tk) for ek, tk, _ in config.order.energy_channel_threshold_order}
+    if event_forecasts.empty:
+        return {}
+    event_forecasts = event_forecasts[
+        event_forecasts.apply(
+            lambda r: (_normalize_energy_key(r['Energy Channel Key']), r['Threshold Key']) in configured,
+            axis=1)
+    ]
+    if event_forecasts.empty:
+        return {}
+
+    unique_events = event_forecasts.drop_duplicates(
+        subset=['Energy Channel Key', 'Threshold Key', 'Observed SEP Threshold Crossing Time'])
+    unique_events = unique_events[unique_events['Mismatch Allowed'] == False]
+    if unique_events.empty:
+        return {}
+
+    counts = {}
+    for _, row in unique_events.iterrows():
+        label = _channel_label(_normalize_energy_key(row['Energy Channel Key']), row['Threshold Key'])
+        counts[label] = counts.get(label, 0) + 1
+    return counts
+
+
+def build_new_events_line(counts):
+    """Build the "New SEP events in this period" summary line shown near
+    the top of the report, directly beneath the evaluation period.
+
+    Returns plain text/inline HTML with no block-level wrapper of its
+    own -- this is substituted into the email header template's
+    ${new_events_line}$ placeholder, which already sits inside a
+    .paragraph_title div (the same style used for the generation time
+    and evaluation period lines above it), so the sizing matches those
+    two lines automatically.
+
+    Parameters
+    ----------
+    counts : dict
+        Output of count_unique_events_by_channel for the current
+        report's period -- maps channel label to event count.
+
+    Returns
+    -------
+    text : str
+        Either "No new SEP events in this period." or a bold, red "New
+        SEP events in this period:" label followed by the per-channel
+        counts.
+    """
+    if not counts:
+        return 'No new SEP events in this period.'
+    channel_summary = '; '.join(f'{label} ({count})' for label, count in sorted(counts.items()))
+    line = ('<b><span style="color:red;">New SEP events in this period:</span></b> '
+            + channel_summary)
+    return line
+
 
 def get_unique_events(event_forecasts): 
     unique_events = event_forecasts.drop_duplicates(subset=['Energy Channel Key', 'Threshold Key', 'Observed SEP Threshold Crossing Time'])
@@ -91,6 +240,7 @@ def build_event_summary(event_forecasts, base_indent=0):
 def build_model_event_forecasts(event_forecasts):
     models = event_forecasts['Model Category'].unique().tolist()
     contingency_stat_header = ['Model Flavor', 'Observed SEP Threshold Crossing Time', 'Forecast Issue Time', 'Prediction Window Start', 'Prediction Window End']
+    contingency_stat_display_header = ['Model Variant', 'Observed SEP Threshold Crossing Time', 'Forecast Issue Time', 'Prediction Window Start', 'Prediction Window End']
     text = build_html.build_paragraph_title('Model Forecasts')
     for model in models:
         text += build_html.build_paragraph_title(model, sublevel=1)
@@ -99,15 +249,15 @@ def build_model_event_forecasts(event_forecasts):
         for energy in energies:
             text += build_html.build_paragraph_title(manipulate_keys.convert_energy_key_to_string(energy), sublevel=2)
             df_energy = df[df['Energy Channel Key'] == energy]
-            text += tabulate_contingency_metrics.build_single_stat_contingency_table(df_energy, mode='hit', header=contingency_stat_header)
-            text += tabulate_contingency_metrics.build_single_stat_contingency_table(df_energy, mode='miss', header=contingency_stat_header)
+            text += tabulate_contingency_metrics.build_single_stat_contingency_table(df_energy, mode='hit', header=contingency_stat_header, display_header=contingency_stat_display_header)
+            text += tabulate_contingency_metrics.build_single_stat_contingency_table(df_energy, mode='miss', header=contingency_stat_header, display_header=contingency_stat_display_header)
     return text
 
-def build_event_section(event_forecasts, end_datetime):
+def build_event_section(event_forecasts, start_datetime, end_datetime):
     text = ''
     text += build_html.build_section_title('Events')
     text += build_html.build_paragraph_title('Scoreboard Links')
-    text += build_ccmc_scoreboard_links(event_forecasts, end_datetime)
+    text += build_ccmc_scoreboard_links(event_forecasts, start_datetime, end_datetime)
     text += build_event_summary(event_forecasts)
     text += build_html.build_divider()
     return text

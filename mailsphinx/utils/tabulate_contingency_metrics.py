@@ -11,7 +11,19 @@ import os
 _NE_ABBREVIATIONS = _eb.NE_ABBREVIATIONS
 
 
-def build_single_stat_contingency_table(df, mode, header):
+def build_single_stat_contingency_table(df, mode, header, display_header=None):
+    """
+    Parameters
+    ----------
+    header : list of string
+        Actual dataframe column names used to pull row data.
+    display_header : list of string or None
+        Labels shown in the table header. Must be the same length as
+        header, in the same order. If None, header is used for display
+        too.
+    """
+    if display_header is None:
+        display_header = header
     if mode == 'hit':
         observed_sep_all_clear = False
         predicted_sep_all_clear = False
@@ -38,7 +50,7 @@ def build_single_stat_contingency_table(df, mode, header):
         table_data.append(table_row)
     text = build_html.build_regular_text(stats + ': ' + str(len(df_stat)))
     if len(df_stat) > 0:
-        text += build_html.build_table(header, table_data, header_color=color)
+        text += build_html.build_table(display_header, table_data, header_color=color)
     return text
 
 
@@ -122,7 +134,7 @@ def build_contingency_table_data(df, header, mode='all',
         for subname, subgroup in group.groupby('Model Flavor'):
             table_line_dict = dict(zip(header, [''] * len(header)))
             table_line_dict['Model Category'] = name
-            table_line_dict['Model Flavor'] = subname
+            table_line_dict['Model Variant'] = subname
             table_line_dict['All-Time Report Link'] = build_html.build_html_shortlink(
                 os.path.join(config.path.report, subgroup['Model'].iloc[0] + '_report.html'),
                 name + ' ' + subname)
@@ -183,7 +195,7 @@ def build_all_clear_contingency_table(df, week_start, week_end):
         "Values are given in the form X (+Y), where X is the all-time quantity, "
         "and Y is the quantity added from this period's results. X is inclusive of Y.")
 
-    headers = ['Model Category', 'Model Flavor', 'Hits', 'Misses', 'False Alarms',
+    headers = ['Model Category', 'Model Variant', 'Hits', 'Misses', 'False Alarms',
                'Correct Negatives', 'Not Evaluated', 'Forecasts', 'All-Time Report Link']
     header_color_dict = dict(zip(headers, [
         None, None,
@@ -228,5 +240,7 @@ def build_false_alarm_table(df):
     text = build_html.build_paragraph_title('False Alarms')
     headers = ['Model Category', 'Model Flavor', 'Forecast Issue Time',
                'Prediction Window Start', 'Prediction Window End']
-    text += build_single_stat_contingency_table(df, mode='false alarm', header=headers)
+    display_headers = ['Model Category', 'Model Variant', 'Forecast Issue Time',
+               'Prediction Window Start', 'Prediction Window End']
+    text += build_single_stat_contingency_table(df, mode='false alarm', header=headers, display_header=display_headers)
     return text

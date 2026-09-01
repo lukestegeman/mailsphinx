@@ -25,6 +25,30 @@ def _is_configured_channel(energy_key, threshold_key):
                for ek, tk, _ in config.order.energy_channel_threshold_order)
 
 
+def _configured_thresholds_for_energy_key(energy_key):
+    """Return every threshold_key configured for this (normalized) energy
+    channel, per config.order.energy_channel_threshold_order."""
+    norm = _norm_energy_key(energy_key)
+    return [tk for ek, tk, _ in config.order.energy_channel_threshold_order if ek == norm]
+
+
+def _section_heading_label(energy_key):
+    """Build the section heading label for an energy channel, including
+    the threshold when there's exactly one configured threshold for it
+    (the common case), so headings read "> 10 MeV, > 10 pfu" instead of
+    just "> 10 MeV" -- consistent with how every other section (Overview,
+    Contingency Tables, Metrics Summary) labels channels. If more than
+    one threshold is configured for the same energy channel, falls back
+    to the energy-only label, since a single threshold can no longer
+    unambiguously represent the whole heading."""
+    energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
+    thresholds = _configured_thresholds_for_energy_key(energy_key)
+    if len(thresholds) == 1:
+        threshold_string = manipulate_keys.convert_threshold_key_to_string(thresholds[0])
+        return f'{energy_channel_string}, {threshold_string}'
+    return energy_channel_string
+
+
 def build_model_section(df, weekly_df, week_start, week_end, events, convert_images_to_base64=False):
     text = build_html.build_section_title('Model Performance Time Series')
 
@@ -37,7 +61,7 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
         if not any(_is_configured_channel(energy_key, tk)
                    for tk in energy_group['Threshold Key'].unique()):
             continue
-        energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
+        energy_channel_string = _section_heading_label(energy_key)
         if energy_group['Energy Channel Key'].eq(energy_key).any():
             text += build_html.build_paragraph_title(energy_channel_string, sublevel=1)
             for model_category, group in energy_group.groupby('Model Category'):
@@ -51,7 +75,7 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                             space = ''
                         else:
                             space = ' '
-                        title = model_category + space + model_flavor.replace('_', ' ') + ', ' + energy_channel_string + ', ' + threshold_string
+                        title = model_category + space + model_flavor.replace('_', ' ') + ', ' + manipulate_keys.convert_energy_key_to_string(energy_key) + ', ' + threshold_string
                         text += plot_contingency.build_contingency_plot(title, subsubgroup, os.path.join(config.path.email_image, 'contingency-' + str(counter) + '.jpg'), week_start, week_end, filtered_events, convert_image_to_base64=convert_images_to_base64)
                         counter += 1
 
@@ -63,7 +87,7 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
             if not any(_is_configured_channel(energy_key, tk)
                        for tk in energy_group['Threshold Key'].unique()):
                 continue
-            energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
+            energy_channel_string = _section_heading_label(energy_key)
             if energy_group['Energy Channel Key'].eq(energy_key).any():
                 energy_reached = True
                 for threshold_key, group in energy_group.groupby('Threshold Key'):
@@ -85,7 +109,7 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
         if not any(_is_configured_channel(energy_key, tk)
                    for tk in energy_group['Threshold Key'].unique()):
             continue
-        energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
+        energy_channel_string = _section_heading_label(energy_key)
         if not filter_objects.is_column_empty(energy_group, 'Predicted SEP Probability'):
             text += build_html.build_paragraph_title(energy_channel_string, sublevel=1)
             for name, group in energy_group.groupby('Model Category'):
@@ -101,7 +125,7 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                         subname = ' ' + unique_model_flavors[0]
                     else:
                         subname = ''
-                    text += plot_probability.build_probability_plot(name + subname + ', ' + energy_channel_string, group, os.path.join(config.path.email_image, 'probability-histogram-' + str(counter) + '.jpg'), week_start, week_end, filtered_events, need_legend=need_legend, convert_image_to_base64=convert_images_to_base64)
+                    text += plot_probability.build_probability_plot(name + subname + ', ' + manipulate_keys.convert_energy_key_to_string(energy_key), group, os.path.join(config.path.email_image, 'probability-histogram-' + str(counter) + '.jpg'), week_start, week_end, filtered_events, need_legend=need_legend, convert_image_to_base64=convert_images_to_base64)
                     counter += 1
 
     # MAKE PREDICTED PEAK FLUX VS. OBSERVED PEAK FLUX — 4 PLOTS PER CHANNEL:

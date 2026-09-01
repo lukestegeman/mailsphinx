@@ -23,7 +23,7 @@ if __name__ == '__main__':
         else:
             historical = False
 
-        html = bt.build_text(historical)
+        html, event = bt.build_text(historical)
 
 
         a = open('test.html', 'w')

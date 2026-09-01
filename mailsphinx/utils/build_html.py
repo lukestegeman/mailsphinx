@@ -1,4 +1,3 @@
-
 from ..utils import config
 from ..utils import format_objects
 
@@ -106,18 +105,50 @@ def build_table(headers, table_data, base_indent=0, header_color=config.color.as
     text += (base_indent + 0) * config.html.indent + '</table>\n'
     return text
 
-def build_image(image_filename, base_indent=0, image_width_percentage=100, write_as_base64=False):
+def build_image(image_filename, base_indent=0, image_width_percentage=100, write_as_base64=False, native_size=False):
+    """
+    Writes the html that displays an image.
+
+    Parameters
+    ----------
+    image_filename : string
+
+    image_width_percentage : int
+        Percentage of the container width the image should be scaled
+        to. Ignored if native_size is True.
+
+    native_size : bool
+        If True, the image is displayed at its actual saved pixel
+        dimensions (via CSS "width: auto") instead of being stretched
+        or shrunk to a percentage of the surrounding container width.
+        A "max-width: 100%" safety cap is still applied so an unusually
+        large image can't overflow the email layout. image_width_percentage
+        is ignored when this is True. To make a native-size image
+        appear larger or smaller, change the figure's own saved
+        dimensions (e.g. figsize/dpi at plot-creation time) rather than
+        the display width here.
+
+    Returns
+    -------
+    text : string
+    """
     text = ''
     text += (base_indent + 0) * config.html.indent + '<table border="0" cellpadding="0" cellspacing="0" class="image_block" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;" width="100%">\n'
     text += (base_indent + 1) * config.html.indent + '<tr>\n'
     text += (base_indent + 2) * config.html.indent + '<td class="pad" style="width:100%;">\n'
     text += (base_indent + 3) * config.html.indent + '<div align="center" class="alignment" style="line-height:10px">\n'
+    if native_size:
+        width_style = 'width: auto; max-width: 100%;'
+        width_attr = ''
+    else:
+        width_style = 'width: ' + str(image_width_percentage) + '%;'
+        width_attr = ' width="' + config.html.max_width.rstrip('px') + '"'
     if write_as_base64:
-        text += (base_indent + 4) * config.html.indent + '<div style="max-width: ' + config.html.max_width + ';"><img height="auto" src="' + convert_image_to_base64(image_filename) + '" style="display: block; height: auto; border: 0; width: ' + str(image_width_percentage) + '%;" width="' + config.html.max_width.rstrip('px') + '"/></div>\n'  
+        text += (base_indent + 4) * config.html.indent + '<div style="max-width: ' + config.html.max_width + ';"><img height="auto" src="' + convert_image_to_base64(image_filename) + '" style="display: block; height: auto; border: 0; ' + width_style + '"' + width_attr + '/></div>\n'  
     else:
         config.image.cid_dict[image_filename] = 'image' + str(config.image.cid_dict_index)
         config.image.cid_dict_index += 1
-        text += (base_indent + 4) * config.html.indent + '<div style="max-width: ' + config.html.max_width + ';"><img height="auto" src="cid:' + config.image.cid_dict[image_filename] + '" style="display: block; height: auto; border: 0; width: ' + str(image_width_percentage) + '%;" width="' + config.html.max_width.rstrip('px') + '"/></div>\n'
+        text += (base_indent + 4) * config.html.indent + '<div style="max-width: ' + config.html.max_width + ';"><img height="auto" src="cid:' + config.image.cid_dict[image_filename] + '" style="display: block; height: auto; border: 0; ' + width_style + '"' + width_attr + '/></div>\n'
     text += (base_indent + 3) * config.html.indent + '</div>\n'
     text += (base_indent + 2) * config.html.indent + '</td>\n'
     text += (base_indent + 1) * config.html.indent + '</tr>\n'
@@ -128,13 +159,17 @@ def build_html_shortlink(link, text):
     text = '<a href="' + link + '">' + text + '</a>'
     return text
 
-def build_head_section():
+def build_head_section(new_events_line=''):
     """
     Writes the html that makes up the front matter of the email body.
 
     Parameters
     ----------
-    None
+    new_events_line : string
+        Pre-built HTML for the "New SEP events in this period" summary
+        line (see build_event.build_new_events_line), placed directly
+        beneath the evaluation period in the template. Defaults to an
+        empty string if not given.
     
     Returns
     -------
@@ -146,6 +181,7 @@ def build_head_section():
     config.time.generation_time = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0).strftime('%Y-%m-%d %H:%M')
     text = text.replace('${generation_time}$', 'Report Generation Time: ' + config.time.generation_time + ' (all UTC)')
     text = text.replace('${evaluation_period}$', 'Evaluation Period: ' + config.time.start_time.strftime('%Y-%m-%d %H:%M') + ' to ' + config.time.end_time.strftime('%Y-%m-%d %H:%M'))
+    text = text.replace('${new_events_line}$', new_events_line)
     text = text.replace('${mailsphinx_archive}$', config.path.index)
     for key, value in config.html.template_variables.items():
         text = text.replace('${' + key + '}$', value)

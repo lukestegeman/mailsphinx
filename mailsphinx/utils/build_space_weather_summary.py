@@ -10,6 +10,7 @@ import numpy as np
 import os
 import pandas as pd
 import requests
+import sys
 import warnings
 
 plt.rcParams['font.family'] = config.plot.font
@@ -72,7 +73,7 @@ def download_ace_epam_flux(start_datetime, end_datetime):
     else:
         print(f'Failed to retrieve data. HTTP Status code: {response.status_code}')
         print('Exiting...')
-        exit()
+        sys.exit(1)
     return df
 
 def download_goes_flux(flux_type, start_datetime, end_datetime): 
@@ -96,7 +97,7 @@ def download_goes_flux(flux_type, start_datetime, end_datetime):
     else:
         print(f'Failed to retrieve data. HTTP Status code: {response.status_code}')
         print('Exiting...')
-        exit()
+        sys.exit(1)
     return df
 
 def plot_flux(df_xray, df_proton, df_electron): 

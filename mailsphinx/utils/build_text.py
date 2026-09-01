@@ -121,6 +121,10 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
     Returns
     -------
     html : string
+    event : bool
+        True if an observed SEP event occurred during
+        [start_datetime, end_datetime), False otherwise (including
+        when there is no data to evaluate at all).
     """
     #warnings.simplefilter('always', category=RuntimeWarning)
     #warnings.showwarning = custom_warning_handler
@@ -140,6 +144,7 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         sphinx_df[col] = sphinx_df[col].dt.tz_localize('UTC')
     sphinx_df = filter_objects.categorize_column(sphinx_df, 'Model', 'Model Category', 'Model Flavor')
 
+    event = False
     if sphinx_df.empty:
         html = ''
     else:
@@ -157,9 +162,19 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         weekly_forecasts['Energy Channel Key'] = pd.Categorical(weekly_forecasts['Energy Channel Key'], categories=config.order.energy_key_order, ordered=True)
         weekly_forecasts = weekly_forecasts.sort_values('Energy Channel Key')
 
+        # CHECK FOR NEW EVENTS IN THIS REPORT'S PERIOD BEFORE BUILDING THE
+        # HEADER, SO THE NEW-EVENTS SUMMARY LINE CAN BE SHOWN IMMEDIATELY
+        # BENEATH THE EVALUATION PERIOD. REUSED BELOW FOR THE Events
+        # SECTION FURTHER DOWN, SO THIS IS ONLY COMPUTED ONCE.
+        event_forecasts, event = build_event.check_for_event(sphinx_df, start_datetime, end_datetime)
+        events, _ = build_event.get_unique_events(event_forecasts)
+        new_event_counts = build_event.count_unique_events_by_channel(
+            sphinx_df, start_datetime=start_datetime, end_datetime=end_datetime)
+
         # WRITE HTML
         html = ''
-        html += build_html.build_head_section()
+        new_events_line_html = build_event.build_new_events_line(new_event_counts)
+        html += build_html.build_head_section(new_events_line=new_events_line_html)
 
         # TABLE OF CONTENTS — LIST TOP-LEVEL SECTIONS WITH JUMP LINKS.
         # THE REleASE NOTE APPEARS HERE SINCE IT APPLIES ACROSS SECTIONS.
@@ -175,12 +190,14 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         release_note = None
         if has_release:
             release_note = (
-                '<em>Note on HESPERIA REleASE:</em> REleASE forecasts are issued for '
-                '15.8&#8209;39.8&nbsp;MeV protons exceeding 0.1&nbsp;pfu/MeV, but are '
-                'validated here against &gt;10&nbsp;MeV protons exceeding 10&nbsp;pfu. '
-                'Predicted peak fluxes from REleASE may be correlated with observed values '
-                'but are not expected to match numerically, as they represent different '
-                'energy channels and units.'
+                '<em>Note on HESPERIA REleASE:</em> REleASE forecasts of '
+                '15.8&#8209;39.8&nbsp;MeV protons exceeding 0.1&nbsp;pfu/MeV are validated '
+                'here against &gt;10&nbsp;MeV protons exceeding 10&nbsp;pfu. REleASE '
+                'forecasts of 28.2&#8209;50.1&nbsp;MeV protons exceeding 0.1&nbsp;pfu/MeV '
+                'are validated against both &gt;10&nbsp;MeV protons exceeding 10&nbsp;pfu '
+                'and &gt;100&nbsp;MeV protons exceeding 1&nbsp;pfu. Predicted peak fluxes '
+                'from REleASE may be correlated with observed values but are not expected '
+                'to match numerically, as they represent different energy channels and units.'
             )
         html += build_html.build_toc(toc_sections, notes=release_note)
 
@@ -188,11 +205,11 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         event_forecasts, event = build_event.check_for_event(sphinx_df, start_datetime, end_datetime)
         events, _ = build_event.get_unique_events(event_forecasts)
         if event:
-            html += build_event.build_event_section(event_forecasts, end_datetime)
+            html += build_event.build_event_section(event_forecasts, start_datetime, end_datetime)
         contingency_html, breakdown_sections = tabulate_contingency_metrics.build_all_clear_contingency_table(sphinx_df, start_datetime, end_datetime)
         html += contingency_html
         html += build_space_weather_summary.build_space_weather_summary(start_datetime=start_datetime, end_datetime=end_datetime, convert_image_to_base64=convert_images_to_base64)
         html += build_model.build_model_section(sphinx_df, weekly_forecasts, start_datetime, end_datetime, events, convert_images_to_base64)
         html += build_metrics.build_metrics_section(sphinx_df)
         html += build_evaluation_breakdown.build_evaluation_breakdown(breakdown_sections)
-    return html
+    return html, event
