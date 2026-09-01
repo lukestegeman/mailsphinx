@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
         start_datetime = datetime.datetime(year=2024, month=1, day=1).replace(tzinfo=datetime.timezone.utc)
         end_datetime = datetime.datetime(year=2024, month=1, day=8).replace(tzinfo=datetime.timezone.utc)
-        html = bt.build_text(historical, convert_images_to_base64=False, start_datetime=start_datetime, end_datetime=end_datetime)
+        html, event = bt.build_text(historical, convert_images_to_base64=False, start_datetime=start_datetime, end_datetime=end_datetime)
 
 
         a = open('test.html', 'w')

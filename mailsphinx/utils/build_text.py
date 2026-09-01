@@ -121,6 +121,10 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
     Returns
     -------
     html : string
+    event : bool
+        True if an observed SEP event occurred during
+        [start_datetime, end_datetime), False otherwise (including
+        when there is no data to evaluate at all).
     """
     #warnings.simplefilter('always', category=RuntimeWarning)
     #warnings.showwarning = custom_warning_handler
@@ -140,6 +144,7 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         sphinx_df[col] = sphinx_df[col].dt.tz_localize('UTC')
     sphinx_df = filter_objects.categorize_column(sphinx_df, 'Model', 'Model Category', 'Model Flavor')
 
+    event = False
     if sphinx_df.empty:
         html = ''
     else:
@@ -207,4 +212,4 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         html += build_model.build_model_section(sphinx_df, weekly_forecasts, start_datetime, end_datetime, events, convert_images_to_base64)
         html += build_metrics.build_metrics_section(sphinx_df)
         html += build_evaluation_breakdown.build_evaluation_breakdown(breakdown_sections)
-    return html
+    return html, event

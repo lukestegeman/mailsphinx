@@ -76,7 +76,7 @@ def main(do_send_email=False, start_datetime=None, end_datetime=None, convert_im
     # start_datetime AND end_datetime ARE KNOWN
    
     # GENERATE EMAIL CONTENT 
-    html = build_text.build_text(start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=convert_images_to_base64, dataframe_filename=dataframe_filename, partition_path=partition_path)
+    html, event = build_text.build_text(start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=convert_images_to_base64, dataframe_filename=dataframe_filename, partition_path=partition_path)
     
     # SAVE IN FILESYSTEM
     save_directory = os.path.join(config.path.email_storage, save_directory_sub)
@@ -94,10 +94,13 @@ def main(do_send_email=False, start_datetime=None, end_datetime=None, convert_im
 
     # SEND EMAIL TO ALL RECIPIENTS
     if do_send_email:
+        event_state = 'Event' if event else 'No Event'
+        subject = ('MailSPHINX Report (' + event_state + '): '
+            + start_datetime.strftime('%Y-%m-%d') + '--' + end_datetime.strftime('%Y-%m-%d'))
         # COLLECT SUBSCRIBERS
         subscribers = subscription.load_subscribers()
         for subscriber in subscribers:
-            send_email.send_email('MailSPHINX Test: ISEP (Internal) Email List', html, subscriber.email, send=do_send_email)
+            send_email.send_email(subject, html, subscriber.email, send=do_send_email)
     
 def batch(directory, file_pattern_startswith=None, save_directory_sub='batch'):
     """
