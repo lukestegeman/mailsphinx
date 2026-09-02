@@ -7,3 +7,4 @@ external_datapath/
 **/reports/*
 **/zips/*
 **/sandbox/*
+venv/
