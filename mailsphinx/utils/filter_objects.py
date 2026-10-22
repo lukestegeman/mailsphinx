@@ -22,6 +22,9 @@ def extract_common_substring(s):
     # CATEGORY RATHER THAN SPLITTING ON THE FIRST SPACE OR UNDERSCORE.
     known_prefixes = [
         'HESPERIA REleASE',
+        'Baseline CME',
+        'Baseline Flare',
+        'Baseline Protons',
     ]
     for prefix in known_prefixes:
         if s.startswith(prefix):

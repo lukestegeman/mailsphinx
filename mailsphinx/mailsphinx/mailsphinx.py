@@ -147,7 +147,12 @@ def batch(directory, file_pattern_startswith=None, save_directory_sub='batch'):
         month = int(time_tag[4:])
         days_in_month = calendar.monthrange(year, month)[1]
         start_datetime = datetime.datetime(year=year, month=month, day=1).replace(tzinfo=pytz.UTC)
-        end_datetime = datetime.datetime(year=year, month=month, day=days_in_month).replace(tzinfo=pytz.UTC)
+        # SAME +1 DAY FIX AS bin/run_mailsphinx.py's CLI PARSING -- SEE
+        # THAT FILE'S COMMENT FOR THE FULL EXPLANATION. days_in_month
+        # ALONE IS MIDNIGHT ON THE LAST CALENDAR DAY, WHICH THE
+        # DOWNSTREAM EXCLUSIVE `< end_datetime` COMPARISON TREATS AS
+        # EXCLUDING THAT ENTIRE DAY.
+        end_datetime = (datetime.datetime(year=year, month=month, day=days_in_month) + datetime.timedelta(days=1)).replace(tzinfo=pytz.UTC)
         main(do_send_email=False, start_datetime=start_datetime, end_datetime=end_datetime, convert_images_to_base64=True, dataframe_filename=dataframe_path, save_directory_sub=save_directory_sub, external_report_location='./.tmp/reports/')
         
 if __name__ == '__main__':

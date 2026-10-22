@@ -93,6 +93,14 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                 for threshold_key, group in energy_group.groupby('Threshold Key'):
                     if not _is_configured_channel(energy_key, threshold_key):
                         continue
+                    # DUM MODELS (Baseline CME/Flare/Protons, Median Peak DUM)
+                    # ARE EXCLUDED FROM ADVANCED WARNING TIME -- THIS METRIC IS
+                    # MEANINGLESS FOR THEM, SINCE THEY ARE CONSTRUCTED AFTER THE
+                    # FACT FROM AN OBSERVED EVENT'S OWN TRIGGER/TIMING, NOT
+                    # ISSUED IN ADVANCE OF IT THE WAY A REAL FORECAST IS.
+                    group = group[group['Evaluation Status'] != 'DUM Model Inserted']
+                    if group.empty:
+                        continue
                     filtered_events = events[(events['Energy Channel Key'] == energy_key) & (events['Threshold Key'] == threshold_key)]
                     for event_key, event_group in filtered_events.groupby('Observed SEP Threshold Crossing Time'):
                         if energy_reached:
@@ -135,6 +143,11 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
     # WITH NO FORECASTS IN THE CURRENT PERIOD STILL APPEAR IN ALL-TIME PLOTS.
     counter = 0
     section_started = False
+    # ONE COLOR PER MODEL CATEGORY, SHARED BY EVERY PEAK FLUX PLOT AND LEGEND
+    category_colors = plot_peak_flux.build_category_colors(df)
+    # REleASE SELECTIONS, READ ONCE PER DATA TYPE, FILTERED PER CHANNEL AND PERIOD BELOW
+    release_all = {d[3]: plot_peak_flux.load_release_selections(d[3])
+                   for d in (plot_peak_flux.ONSET_PEAK, plot_peak_flux.MAX_FLUX)}
     for energy_key, threshold_key, (axis_min, axis_max) in config.order.energy_channel_threshold_order:
         energy_channel_string = manipulate_keys.convert_energy_key_to_string(energy_key)
         threshold_flux_string = manipulate_keys.convert_threshold_key_to_string(threshold_key)
@@ -153,11 +166,17 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
         period_subgroup = weekly_df[period_mask]
 
         channel_plots = []
-        for source_df, period_label in [
-            (all_time_subgroup, 'All Time'),
-            (period_subgroup,   'This Period'),
+        # CATEGORIES WITH AT LEAST ONE POINT IN THIS CHANNEL'S 4 PLOTS (FILLED BY THE PLOTS)
+        plotted_categories = set()
+        # ALL TIME = EVERYTHING BEFORE THE END OF THIS EMAIL'S PERIOD; THIS PERIOD = INSIDE IT
+        for source_df, period_label, rel_start in [
+            (all_time_subgroup, 'All Time',    None),
+            (period_subgroup,   'This Period', week_start),
         ]:
             for data_type_def in [plot_peak_flux.ONSET_PEAK, plot_peak_flux.MAX_FLUX]:
+                release_df = plot_peak_flux.filter_release_selections(
+                    release_all[data_type_def[3]], energy_key, threshold_key,
+                    start=rel_start, end=week_end)
                 plot_path = os.path.join(
                     config.path.email_image,
                     f'predicted-peak-flux-vs-observed-peak-flux-{counter}.jpg')
@@ -167,7 +186,10 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
                     source_df, plot_path, threshold_flux,
                     data_type_def, period_label,
                     axis_min=axis_min, axis_max=axis_max,
-                    convert_image_to_base64=convert_images_to_base64)
+                    convert_image_to_base64=convert_images_to_base64,
+                    category_colors=category_colors,
+                    plotted_categories=plotted_categories,
+                    release_df=release_df)
                 if plot_exists:
                     channel_plots.append(plot_text)
 
@@ -186,6 +208,9 @@ def build_model_section(df, weekly_df, week_start, week_end, events, convert_ima
         counter += 1
         text += plot_peak_flux.build_peak_flux_legend(
             df, legend_path,
-            convert_image_to_base64=convert_images_to_base64)
+            convert_image_to_base64=convert_images_to_base64,
+            category_colors=category_colors,
+            categories=plotted_categories)
     text += build_html.build_divider()
     return text
+
