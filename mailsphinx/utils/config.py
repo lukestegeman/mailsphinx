@@ -157,6 +157,8 @@ class Shape:
                              'Correct Negatives' : 'o',
                              'SEP Event' : 'o',
                              'No SEP Event' : 's',
+                             'No SEP Event (SubEvent)' : 'h',
+                             'Trigger not associated with observed SEP' : 'v',
                              'Eruption Out of Range' : 'X',
                              'Trigger/Input after Observed Phenomenon': 'd',
                              'Trigger associated with observed SEP but SEP not in prediction window' : 'd',

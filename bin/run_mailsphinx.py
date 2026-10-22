@@ -33,5 +33,11 @@ else:
     if (args.start_datetime is not None):
         args.start_datetime = datetime.datetime.strptime(args.start_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
     if (args.end_datetime is not None):
-        args.end_datetime = datetime.datetime.strptime(args.end_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
+        # PARSE THEN ADD ONE DAY: --end-datetime IS DOCUMENTED AS "LAST DAY
+        # OF THE EVALUATION PERIOD" (INCLUSIVE), BUT build_text.py's
+        # weekly_condition/yearly_condition (AND EVERY OTHER DOWNSTREAM
+        # CONSUMER) USE AN EXCLUSIVE `< end_datetime` UPPER BOUND.
+        # WITHOUT THIS +1 DAY, THE ENTIRE STATED LAST DAY WAS SILENTLY
+        # DROPPED FROM EVERY "THIS PERIOD" CALCULATION. 
+        args.end_datetime = datetime.datetime.strptime(args.end_datetime, '%Y-%m-%d').replace(tzinfo=pytz.UTC) + datetime.timedelta(days=1)
     mailsphinx.mailsphinx.main(do_send_email=args.send_email, start_datetime=args.start_datetime, end_datetime=args.end_datetime, dataframe_filename=args.dataframe_filename, partition_path=args.partition_path, save_directory_sub=args.save_directory, convert_images_to_base64=args.persistent_images)

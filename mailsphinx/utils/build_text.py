@@ -33,6 +33,7 @@ MAILSPHINX_NEEDED_COLUMNS = [
     'Energy Channel Key',
     'Threshold Key',
     'Mismatch Allowed',
+    'Evaluation Status',
     'Forecast Issue Time',
     'Prediction Window Start',
     'Prediction Window End',
@@ -212,4 +213,5 @@ def build_text(start_datetime, end_datetime, convert_images_to_base64=False, dat
         html += build_model.build_model_section(sphinx_df, weekly_forecasts, start_datetime, end_datetime, events, convert_images_to_base64)
         html += build_metrics.build_metrics_section(sphinx_df)
         html += build_evaluation_breakdown.build_evaluation_breakdown(breakdown_sections)
+
     return html, event

@@ -4,6 +4,7 @@ from ..utils import config
 import datetime
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.ticker
 import pandas as pd
 import pytz
 import warnings
@@ -47,17 +48,11 @@ def plot_advanced_warning(df, save, title, start_datetime, end_datetime, event):
         label.set_ha('left')
         label.set_x(0.0)    
 
-    warnings.filterwarnings('ignore', category=UserWarning)
-    labels = ax.get_xticklabels()
-    reversed_labels = []
-    for label in labels:
-        value = float(label.get_text().replace('\u2212', '-'))
-        if (value > 0) and (value < 1):
-            value = str(-value).replace('-', '\u2212')
-        else:
-            value = str(-int(value)).replace('-', '\u2212')
-        reversed_labels.append(value)
-    ax.set_xticklabels(reversed_labels)
+    # POINTS ARE PLOTTED AT x = -AWT, SO LABEL EACH TICK WITH -x. A FORMATTER (UNLIKE THE OLD
+    # FIXED LABEL LIST) FOLLOWS WHATEVER TICKS MATPLOTLIB PICKS AND KEEPS FRACTIONS
+    # (-x = 12.5 IS "12.5", NOT "12"). '0' AVOIDS A "-0" LABEL; U+2212 IS MATPLOTLIB'S MINUS.
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(
+        lambda x, pos: '0' if x == 0 else f'{-x:g}'.replace('-', '\u2212')))
     padding = 0.5
     ymin, ymax = ax.get_ylim()
     ymin -= padding
@@ -72,4 +67,5 @@ def build_advanced_warning_plot(title, subgroup, save, start_datetime, end_datet
     plot_advanced_warning(subgroup, save, title, start_datetime, end_datetime, event)
     text = build_html.build_image(save, image_width_percentage=99, write_as_base64=convert_image_to_base64)
     return text
+
 
